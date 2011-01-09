@@ -46,10 +46,16 @@ setup: function()
 		this.screenSizeChanged.bind(this));
 
 
-	var chart = this.controller.get('weightchart');
-	this.controller.listen(chart, Mojo.Event.dragStart,
+	/*
+		Register for drag events on the 'labels' canvas instead of on the
+		'chart' canvas, because it is on top.  The 'chart' is the one that will
+		be scrolled though.
+	*/
+	var labels	= this.controller.get('labels');
+
+	this.controller.listen(labels, Mojo.Event.dragStart,
 		this.dragStart.bindAsEventListener(this), true);
-	this.controller.listen(chart, Mojo.Event.dragging,
+	this.controller.listen(labels, Mojo.Event.dragging,
 		this.dragging.bindAsEventListener(this), true);
 
 
@@ -75,7 +81,7 @@ setup: function()
 	// TODO Load real data instead of this fake data
 	/* Assign some random data */
 	var d = new Date(2011, 4, 27, 0, 0, 0, 0);
-	for (var i = 0; i < 32; i++) {
+	for (var i = 0; i < 356; i++) {
 		d.setHours(d.getHours() + 24 + Math.floor(Math.random() * 32));
 		this.data[this.data.length] = {
 			'weight':	(300 - (i / 4)) + (Math.random() * 3),
@@ -97,8 +103,6 @@ setup: function()
 	this.max += 20;
 
 
-
-
 	/* This will be filled out during render() */
 	this.ctx			= null;
 },
@@ -114,11 +118,11 @@ cleanup: function()
 		this.screenSizeChanged.bind(this));
 
 
-	var chart = this.controller.get('weightchart');
+	var labels = this.controller.get('labels');
 
-	this.controller.stopListening(chart, Mojo.Event.dragStart,
+	this.controller.stopListening(labels, Mojo.Event.dragStart,
 		this.dragStart.bind(this));
-	this.controller.stopListening(chart, Mojo.Event.dragging,
+	this.controller.stopListening(labels, Mojo.Event.dragging,
 		this.dragging.bind(this));
 },
 
@@ -132,7 +136,7 @@ screenSizeChanged: function()
 		return;
 	}
 
-	this.render();
+	this.render(true);
 },
 
 handleCommand: function(event)
@@ -199,7 +203,7 @@ handleCommand: function(event)
 	}
 },
 
-render: function()
+render: function(full)
 {
 	/* Something has already called render() */
 	if (this.ctx) {
@@ -207,17 +211,82 @@ render: function()
 		return;
 	}
 
-	var h				= parseInt(this.controller.window.innerHeight);
-	var w				= parseInt(this.controller.window.innerWidth);
-	var chart			= this.controller.get('weightchart');
+	var h					= parseInt(this.controller.window.innerHeight);
+	var w					= parseInt(this.controller.window.innerWidth);
+	var chart				= this.controller.get('chart');
 
-	chart.style.width	= w + 'px';
-	chart.style.height	= h + 'px';
+	if (full) {
+		/* Start by setting up the sizes of each canvas */
+		var labels			= this.controller.get('labels');
 
-	chart.width			= w;
-	chart.height		= h;
+		chart.style.width	= w + 'px'; chart.width		= w;
+		chart.style.height	= h + 'px'; chart.height	= h;
 
-	this.ctx			= chart.getContext('2d');
+		labels.style.width	= w + 'px'; labels.width	= w;
+		labels.style.height	= h + 'px'; labels.height	= h;
+
+
+		/*
+			Draw the labels for weights and BMI values
+
+			The labels only need to be updated if something major changes, such
+			as the screen size changing.  The labels are drawn on their own
+			canvas that sits on top of the chart canvas.
+
+			The lines are spaced at 10 lb intervals, and if possible the
+			labels should be as well.  If the scale is large enough then
+			this won't make sense though, so the interval will need to
+			be larger.
+
+			The font is 13px, so increase the interval until the labels
+			do not overlap.
+		*/
+
+		var c = labels.getContext('2d');
+
+		c.save();
+
+		c.fillStyle	= 'rgba(0, 0, 0, 0.7)';
+		c.fillRect(0,		0, 32, h);
+		c.fillRect(w - 32,	0, 32, h);
+
+		c.fillStyle	= 'rgba(255, 255, 255, 1.0)';
+		c.font		= 'bold 13px sans-serif';
+		c.textAlign	= 'center';
+
+		/*
+			Adjust the canvas so that the origin is in the bottom left which
+			matches our grid.  The y axis is negative.
+		*/
+		c.translate(0, h);
+
+
+		var i = ((this.max - this.min) / (13 - 3));
+		i = i - (i % 10);
+
+		for (var y = (this.min - (this.min % i)); y < this.max; y += i) {
+			c.fillText("" + y, 16, this.getY(y) + 5);
+			c.fillText(this.NumToStr(this.LBtoBMI(y, this.height)),
+				w - 16, this.getY(y) + 5);
+		}
+
+		c.fillStyle	= 'rgba(255, 255, 255, 0.4)';
+		c.fillText("LBs", 16,     -(h - 16));
+		c.fillText("BMI", w - 16, -(h - 16));
+
+		c.restore();
+	}
+
+	this.ctx = chart.getContext('2d');
+
+	/* Draw the graph background */
+	this.ctx.save();
+
+	this.ctx.fillStyle = 'rgba(57, 62, 67, 1)';
+	this.ctx.fillRect(0, 0, w, h);
+
+	this.ctx.restore();
+
 
 	/*
 		Adjust the canvas so that the origin is in the bottom left which matches
@@ -266,38 +335,71 @@ render: function()
 	*/
 	this.ctx.save();
 
-	this.ctx.strokeStyle		= 'rgba( 79, 121, 159, 1)';
+	this.ctx.strokeStyle	= 'rgba( 79, 121, 159, 1)';
 	this.ctx.fillStyle		= 'rgba( 79, 121, 159, 1)';
 
+	var startdate	= this.getDate(this.scrollOffset);
+	var enddate		= this.getDate(this.scrollOffset + w);
+	var i;
+
+	for (i = 1; i < this.data.length; i++) {
+		if (this.data[i].date >= startdate) {
+			i--;
+			break;
+		}
+	}
+
 	this.ctx.beginPath();
-	this.ctx.moveTo(0, this.getY(this.data[0].weight));
-	for (var i = 1; i < this.data.length; i++) {
+	this.ctx.moveTo(0, this.getY(this.data[i].weight));
+
+	for (; i < this.data.length; i++) {
 		this.ctx.lineTo(this.getX(this.data[i].date), this.getY(this.data[i].weight));
+
+		if (this.data[i].date >= enddate) {
+			break;
+		}
 	}
 	this.ctx.stroke();
 
 	/*
 		Draw a projected line...
 
-		TODO: Calculate a rate based on the last few days of data
-		and draw a projected line to the end of the graph based on
-		that rate.
+		TODO: Calculate a rate based on the last few days of data and draw a
+		projected line to the end of the graph based on that rate.
+
+		TODO: Draw a projected line for the past as well based on the rate of
+		the first few records.
+
+		TODO: Make the projected lines fade as they get further away indicating
+		that the data is less accurate.
+
+
+		TODO: Maybe a dotted line isn't the best approach... it seems to be
+		VERY slow on the device.  Maybe a dimmer line would work better??
 	*/
-	var tardate = new Date(this.data[this.data.length - 1].date.getTime());
+	if (this.data[this.data.length - 1].date <= enddate) {
+		var tardate = new Date(this.data[this.data.length - 1].date.getTime());
 
-	/* Add 30 days... */
-	tardate.setDate(tardate.getDate() + 30);
-	this.ctx.dashedLineTo(
-		this.getX(this.data[this.data.length - 1].date),
-		this.getY(this.data[i - 1].weight),
+		/* Add 30 days... */
+		tardate.setDate(tardate.getDate() + 30);
+		this.ctx.dashedLineTo(
+			this.getX(this.data[this.data.length - 1].date),
+			this.getY(this.data[i - 1].weight),
 
-		this.getX(tardate), this.getY(this.data[i - 1].weight - 20),
-		[2, 7]);
+			this.getX(tardate), this.getY(this.data[i - 1].weight - 20),
+			[2, 7]);
 
-	this.ctx.stroke();
+		this.ctx.stroke();
+	}
 
 	/* Draw a "dot" on each point */
 	for (var i = 0; i < this.data.length; i++) {
+		if (this.data[i].date < startdate ||
+			this.data[i].date > enddate
+		) {
+			continue;
+		}
+
 		this.ctx.beginPath();
 		this.ctx.arc(	this.getX(this.data[i].date),
 						this.getY(this.data[i].weight),
@@ -333,7 +435,6 @@ render: function()
 	this.ctx.font		= 'bold 13px sans-serif';
 	this.ctx.textAlign	= 'center';
 
-	/* The date line is below the weight and BMI scales */
 	this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
 	this.ctx.fillRect(0, -(h - this.topMargin), w, -h);
 
@@ -367,40 +468,7 @@ render: function()
 		if (x > w) break;
 	}
 
-
-	this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-	this.ctx.fillRect(0, 0, 32, -h);
-	this.ctx.fillRect(w - 32, 0, w, -h);
-
-	/*
-		Draw the labels for weights and BMI values
-
-		The lines are spaced at 10 lb intervals, and if possible the
-		labels should be as well.  If the scale is large enough then
-		this won't make sense though, so the interval will need to
-		be larger.
-
-		The font is 13px, so increase the interval until the labels
-		do not overlap.
-	*/
-	this.ctx.fillStyle	= 'rgba(255, 255, 255, 0.7)';
-
-	var i = ((this.max - this.min) / (13 - 3));
-
-	i = i - (i % 10);
-	for (var y = (this.min - (this.min % i)); y < this.max; y += i) {
-		this.ctx.fillText("" + y, 16, this.getY(y) + 5);
-		this.ctx.fillText(this.NumToStr(this.LBtoBMI(y, this.height)),
-			w - 16, this.getY(y) + 5);
-	}
-
-	this.ctx.fillStyle	= 'rgba(255, 255, 255, 0.4)';
-	this.ctx.fillText("LBs", 16,     -(h - 16));
-	this.ctx.fillText("BMI", w - 16, -(h - 16));
-
 	this.ctx.restore();
-
-
 
 	/* Restore the original origin */
 	this.ctx.restore();
