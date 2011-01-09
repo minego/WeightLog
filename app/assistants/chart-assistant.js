@@ -13,6 +13,28 @@
 	OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 	ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+
+/*
+	TODO: Optimize the display so that stuff that isn't currently visible isn't
+		  rendered.  One non-visible datapoint on each side should be to make it
+		  look correct.
+
+	TODO: When a data point's dot is tapped on move the "today" tooltip to that
+		  point, and display it's date.
+
+	TODO: Make the scrolling support inertia
+
+	TODO: When the user adds a record allow adding a note along with it, and
+		  display that when they tap on that record.
+
+	TODO: Allow changing the target weight, and record that in the same way that
+		  the user's weight is recorded.  But for each new record save one with
+		  the previous value one milisecond before.  This will keep all of it's
+		  lines level, but show the user what their targets had been in the
+		  past.  (Don't show circles on the target line though...)
+*/
+
+
 var ChartAssistant = Class.create({
 
 setup: function()
@@ -22,6 +44,17 @@ setup: function()
 
 	this.controller.listen(document, 'resize',
 		this.screenSizeChanged.bind(this));
+
+	var chart = this.controller.get('weightchart');
+	this.controller.listen(chart, 'mousedown',
+		this.mouseDown.bindAsEventListener(this), true);
+	this.controller.listen(chart, 'mouseUp',
+		this.mouseUp.bindAsEventListener(this), true);
+	this.controller.listen(chart, 'mousemove',
+		this.mouseMove.bindAsEventListener(this), true);
+
+	this.mouseState = -1;
+
 
 	// TODO Load the user's saved data and preferences (height and target
 	//		weight) from preferences
@@ -163,17 +196,20 @@ handleCommand: function(event)
 
 render: function()
 {
-	var h			= parseInt(this.controller.window.innerHeight);
-	var w			= parseInt(this.controller.window.innerWidth);
-	var cv			= this.controller.get('weightchart');
+	/* Something has already called render() */
+	if (this.ctx) return;
 
-	cv.style.width	= w + 'px';
-	cv.style.height	= h + 'px';
+	var h				= parseInt(this.controller.window.innerHeight);
+	var w				= parseInt(this.controller.window.innerWidth);
+	var chart			= this.controller.get('weightchart');
 
-	cv.width		= w;
-	cv.height		= h;
+	chart.style.width	= w + 'px';
+	chart.style.height	= h + 'px';
 
-	this.ctx		= cv.getContext('2d');
+	chart.width			= w;
+	chart.height		= h;
+
+	this.ctx			= chart.getContext('2d');
 
 	/*
 		Adjust the canvas so that the origin is in the bottom left which matches
@@ -267,11 +303,126 @@ render: function()
 	this.ctx.restore();
 
 
+	// TODO This should continue to default to the most recent point, but we
+	//		should allow the user to select any point by tapping on it.
+
+	// TODO This label should only be today if the selected point is in fact
+	//		today.  For any other day show the month/day.
+	this.showHint("TODAY (" + this.NumToStr(this.data[i - 1].weight) + ")",
+		this.getX(this.data[i - 1].date),
+		this.getY(this.data[i - 1].weight) - 3,
+
+		'rgba(255, 255, 255, 1)',
+		'rgba( 79, 121, 159, 1)', false);
+
+
+	/*
+		Draw the vertical scales (on top of everything else)
+
+		Keep in mind that the origin is still in the bottom left.
+	*/
+	this.ctx.save();
+	this.ctx.font		= 'bold 13px sans-serif';
+	this.ctx.textAlign	= 'center';
+
+	/* The date line is below the weight and BMI scales */
+	this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+	this.ctx.fillRect(0, -(h - this.topMargin), w, -h);
+
+	/*
+		Draw data labels for all visible days
+
+		Determine a sane increment for day labels.  Give each label about 32
+		pixels.  This isn't perfect, but seems to work well.
+	*/
+	var i = 1 + Math.floor(this.daycount / (w / 32));
+	var d = this.getDate(this.scrollOffset);
+
+	d.setSeconds(0);
+	d.setMinutes(0);
+	d.setHours(0);
+
+	/*
+		The starting point changes if the increment isn't 1, which looks very
+		weird.  So, correct for it using 1970 as a fixed point.
+	*/
+	d.setDate(d.getDate() - ((d.getTime() / 86400000) % i));
+
+	this.ctx.fillStyle	= 'black';
+	for (;;) {
+		var x = this.getX(d);
+
+		this.ctx.fillText("" + d.getMonth() + "/" + d.getDate(),
+			x, -(h - 17));
+
+		d.setDate(d.getDate() + i);
+		if (x > w) break;
+	}
+
+
+	this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+	this.ctx.fillRect(0, 0, 32, -h);
+	this.ctx.fillRect(w - 32, 0, w, -h);
+
+	/*
+		Draw the labels for weights and BMI values
+
+		The lines are spaced at 10 lb intervals, and if possible the
+		labels should be as well.  If the scale is large enough then
+		this won't make sense though, so the interval will need to
+		be larger.
+
+		The font is 13px, so increase the interval until the labels
+		do not overlap.
+	*/
+	this.ctx.fillStyle	= 'rgba(255, 255, 255, 0.7)';
+
+	var i = ((this.max - this.min) / (13 - 3));
+
+	i = i - (i % 10);
+	for (var y = (this.min - (this.min % i)); y < this.max; y += i) {
+		this.ctx.fillText("" + y, 16, this.getY(y) + 5);
+		this.ctx.fillText(this.NumToStr(this.LBtoBMI(y, this.height)),
+			w - 16, this.getY(y) + 5);
+	}
+
+	this.ctx.fillStyle	= 'rgba(255, 255, 255, 0.4)';
+	this.ctx.fillText("LBs", 16,     -(h - 16));
+	this.ctx.fillText("BMI", w - 16, -(h - 16));
+
+	this.ctx.restore();
+
+
+
 	/* Restore the original origin */
 	this.ctx.restore();
 
 	/* this.ctx is only valid while rendering */
 	this.ctx		= null;
+},
+
+mouseDown: function(e)
+{
+	if (e.offsetX > 0) {
+		this.mouseState = e.offsetX;
+	} else {
+		this.mouseState = -1;
+	}
+},
+
+mouseUp: function(e)
+{
+	this.mouseState = -1;
+},
+
+mouseMove: function(e)
+{
+	if (e.offsetX > 0 && this.mouseState > 0) {
+		this.scrollOffset -= (e.offsetX - this.mouseState);
+		this.mouseState = e.offsetX;
+
+		this.render();
+	}
 },
 
 
