@@ -1,0 +1,10 @@
+{
+	"id":		"net.minego.slowest",
+	"version":	"0.0.1",
+	"vendor":	"minego",
+	"type":		"web",
+	"main":		"index.html",
+	"title":	"The Slowest Hero",
+	"icon":		"icon.png",
+	"noWindow":	true
+}
