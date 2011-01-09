@@ -1,10 +1,10 @@
 {
-	"id":		"net.minego.slowest",
+	"id":		"net.minego.weightlog",
 	"version":	"0.0.1",
 	"vendor":	"minego",
 	"type":		"web",
 	"main":		"index.html",
-	"title":	"The Slowest Hero",
+	"title":	"Weight Log",
 	"icon":		"icon.png",
-	"noWindow":	true
+	"noWindow":	false
 }
