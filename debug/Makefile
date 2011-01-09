@@ -3,7 +3,7 @@ APPID=$(shell grep '"id"' appinfo.json | cut -d: -f2 | cut -d'"' -f2)
 all: lint
 	rm -rf tmp 2>/dev/null || true
 	mkdir tmp
-	cp -r ../app ../levels ../images ../index.html ../resources ../stylesheets ../icon.png ../sources.json tmp
+	cp -r ../app ../images ../index.html ../resources ../stylesheets ../icon.png ../sources.json tmp
 	cp -r appinfo.json framework_config.json tmp
 	palm-package tmp
 	rm -rf tmp
