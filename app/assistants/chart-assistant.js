@@ -45,15 +45,12 @@ setup: function()
 	this.controller.listen(document, 'resize',
 		this.screenSizeChanged.bind(this));
 
-	var chart = this.controller.get('weightchart');
-	this.controller.listen(chart, 'mousedown',
-		this.mouseDown.bindAsEventListener(this), true);
-	this.controller.listen(chart, 'mouseUp',
-		this.mouseUp.bindAsEventListener(this), true);
-	this.controller.listen(chart, 'mousemove',
-		this.mouseMove.bindAsEventListener(this), true);
 
-	this.mouseState = -1;
+	var chart = this.controller.get('weightchart');
+	this.controller.listen(chart, Mojo.Event.dragStart,
+		this.dragStart.bindAsEventListener(this), true);
+	this.controller.listen(chart, Mojo.Event.dragging,
+		this.dragging.bindAsEventListener(this), true);
 
 
 	// TODO Load the user's saved data and preferences (height and target
@@ -115,6 +112,14 @@ cleanup: function()
 {
 	this.controller.stopListening(document, 'resize',
 		this.screenSizeChanged.bind(this));
+
+
+	var chart = this.controller.get('weightchart');
+
+	this.controller.stopListening(chart, Mojo.Event.dragStart,
+		this.dragStart.bind(this));
+	this.controller.stopListening(chart, Mojo.Event.dragging,
+		this.dragging.bind(this));
 },
 
 screenSizeChanged: function()
@@ -197,7 +202,10 @@ handleCommand: function(event)
 render: function()
 {
 	/* Something has already called render() */
-	if (this.ctx) return;
+	if (this.ctx) {
+		Mojo.log("I'm busy!  Go away!");
+		return;
+	}
 
 	var h				= parseInt(this.controller.window.innerHeight);
 	var w				= parseInt(this.controller.window.innerWidth);
@@ -401,28 +409,24 @@ render: function()
 	this.ctx		= null;
 },
 
-mouseDown: function(e)
+dragStart: function(e)
 {
-	if (e.offsetX > 0) {
-		this.mouseState = e.offsetX;
-	} else {
-		this.mouseState = -1;
-	}
+	this.mouseX = Event.pointerX(event.down);
+	Event.stop(e);
 },
 
-mouseUp: function(e)
+dragging: function(e)
 {
-	this.mouseState = -1;
-},
+	var x = Event.pointerX(event.move);
 
-mouseMove: function(e)
-{
-	if (e.offsetX > 0 && this.mouseState > 0) {
-		this.scrollOffset -= (e.offsetX - this.mouseState);
-		this.mouseState = e.offsetX;
+	if (x != this.mouseX) {
+		this.scrollOffset -= (x - this.mouseX);
+		this.mouseX = x;
 
 		this.render();
 	}
+
+	Event.stop(e);
 },
 
 
