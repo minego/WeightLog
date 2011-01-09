@@ -5,3 +5,20 @@ html, body {
 	margin:			0px;
 }
 
+#chart {
+	z-index:		1;
+}
+
+#labels {
+	z-index:		2;
+}
+
+#chart, #labels {
+	position:		absolute;
+	left:			0px;
+	top:			0px;
+
+	height:			100%;
+	width:			100%;
+}
+
