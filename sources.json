@@ -1,7 +1,5 @@
 [
 	{ 							"source": "app/assistants/app-assistant.js"			},
-	{ "scenes": "engine",		"source": "app/assistants/engine-assistant.js"		},
-
-	{ 							"source": "levels/start.js"							}
+	{ "scenes": "engine",		"source": "app/assistants/engine-assistant.js"		}
 ]
 
