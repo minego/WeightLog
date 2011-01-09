@@ -9,16 +9,16 @@ all: lint
 	rm -rf tmp
 
 install: all
-	palm-install -d emulator *.ipk
+	palm-install *.ipk
 
 clean:
 	rm *.ipk 2>/dev/null || true
 
 launch: install
-	palm-launch -d emulator -i $(APPID)
+	palm-launch -i $(APPID)
 
 log:
-	-palm-log -d emulator -f $(APPID) | sed -u										\
+	-palm-log -f $(APPID) | sed -u										\
 		-e 's/\[[0-9]*-[0-9]*:[0-9]*:[0-9]*\.[0-9]*\] [a-zA-Z]*: //'	\
 		-e 's/indicated new content, but not active./\n\n\n/'
 
