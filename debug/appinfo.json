@@ -6,5 +6,5 @@
 	"main":		"index.html",
 	"title":	"Weight Log",
 	"icon":		"icon.png",
-	"noWindow":	false
+	"noWindow":	true
 }
