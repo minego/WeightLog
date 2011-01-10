@@ -15,6 +15,12 @@
 */
 
 /*
+	TODO: Should year be hidden??
+
+	TODO: Make it go horizontal already
+
+	TODO: Make sure that the buttons don't hide data
+
 	TODO: Make the scrolling support inertia (kinda done... not happy with it)
 
 	TODO: When the user adds a record allow adding a note along with it, and
@@ -32,6 +38,8 @@ var ChartAssistant = Class.create({
 
 setup: function()
 {
+	var w = parseInt(this.controller.window.innerWidth);
+
 	/* I'd like consistent events, regardless of the orientation */
 	this.controller.useLandscapePageUpDown(false);
 
@@ -57,6 +65,65 @@ setup: function()
 		this.tap.bindAsEventListener(this), true);
 
 
+	/* Setup the app menu */
+	this.controller.setupWidget(Mojo.Menu.appMenu,
+		{ omitDefaultItems: true },
+		{
+			visible:		true,
+			items:
+			[
+				{
+					command:		'newrecord',
+					label:			$L('Enter current weight')
+				}, {
+					command:		'today',
+					label:			$L('Today')
+				},
+				Mojo.Menu.prefsItem,
+				{
+					command:		'about',
+					label:			$L('About')
+				},
+				Mojo.Menu.helpItem
+			]
+		}
+	);
+
+	this.controller.setupWidget(Mojo.Menu.commandMenu,
+		{
+			omitDefaultItems:		true,
+			menuClass:				'no-fade'
+		},
+		this.buttonbar = {
+			visible:				true,
+			items:
+			[
+				{
+					command:		'newrecord',
+					icon:			'new'
+				},
+				{
+					toggleCmd:		'week',
+					items:
+					[
+						{
+							command:'week',
+							label:	$L('Week')
+						}, {
+							command:'month',
+							label:	$L('Month')
+						}, {
+							command:'year',
+							label:	$L('Year')
+						}
+					]
+				}
+			]
+		}
+	);
+
+
+	/* Load the user's data and preferences, and setup the chart */
 	// TODO Load the user's saved data and preferences (height and target
 	//		weight) from preferences
 	this.data			= [];
@@ -102,6 +169,11 @@ setup: function()
 
 	/* The selected item defaults to the last one */
 	this.selected		= this.data.length - 1;
+
+	/* The default view should make the most recent entry visible */
+	if (this.data.length) {
+		this.scrollOffset = this.getX(this.data[this.selected].date) - (w * 0.7);
+	}
 
 
 	/* This will be filled out during render() */
@@ -163,13 +235,17 @@ handleCommand: function(event)
 		e = event.originalEvent;
 
 		switch (event.type) {
-			case Mojo.Event.back:
-				cmd = 'undo';
-				break;
-
 			case Mojo.Event.command:
 				cmd = event.command;
 				break;
+
+			case Mojo.Event.commandEnable:
+				/*
+					This app does not enable or disable any menu items, so
+					all commands are enabled.
+				*/
+				event.stopPropagation();
+				return;
 
 			default:
 				return;
@@ -180,9 +256,6 @@ handleCommand: function(event)
 	// TODO: Setup the menu.  Right now none of these events will be called
 	// because the default menu is in place
 	switch (cmd) {
-		case 'undo':
-			break;
-
 		case Mojo.Menu.prefsCmd:
 			// TODO: Create a prefs page
 			this.controller.stageController.pushScene('prefs');
@@ -199,7 +272,21 @@ handleCommand: function(event)
 			this.controller.stageController.pushScene('help');
 			break;
 
+		case 'week':
+			this.setDayCount(9);
+			break;
+
+		case 'month':
+			this.setDayCount(35);
+			break;
+
+		case 'year':
+			this.setDayCount(356);
+			break;
+
 		default:
+			Mojo.log('Ignoring command: ' + cmd);
+
 			/* Let the event through */
 			return;
 	}
@@ -746,6 +833,32 @@ showHint: function(text, x, y, fgstyle, bgstyle)
 	this.ctx.fillText(text, x - 1, y - 12);
 
 	this.ctx.restore();
+},
+
+/*
+	Change the scale of the graph to cover the specified number of days.
+
+	This keeps the view centered on the same point, and will re-render if it is
+	needed.
+*/
+setDayCount: function(daycount)
+{
+	if (this.daycount == daycount) {
+		/* woo, all done */
+		return;
+	}
+
+	var w				= parseInt(this.controller.window.innerWidth);
+	var daywidth		= (w / this.daycount);
+	var so				= this.scrollOffset + (w / 2);
+	var days			= so / daywidth;
+
+	this.daycount		= daycount;
+
+	daywidth			= (w / this.daycount);
+	this.scrollOffset	= (days * daywidth) - (w / 2);
+
+	this.render();
 }
 
 });
