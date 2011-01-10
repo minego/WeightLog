@@ -55,6 +55,8 @@ setup: function()
 
 	this.controller.listen(labels, Mojo.Event.dragStart,
 		this.dragStart.bindAsEventListener(this), true);
+	this.controller.listen(labels, Mojo.Event.dragEnd,
+		this.dragEnd.bindAsEventListener(this), true);
 	this.controller.listen(labels, Mojo.Event.dragging,
 		this.dragging.bindAsEventListener(this), true);
 
@@ -122,6 +124,8 @@ cleanup: function()
 
 	this.controller.stopListening(labels, Mojo.Event.dragStart,
 		this.dragStart.bind(this));
+	this.controller.stopListening(labels, Mojo.Event.dragEnd,
+		this.dragEnd.bind(this));
 	this.controller.stopListening(labels, Mojo.Event.dragging,
 		this.dragging.bind(this));
 },
@@ -217,13 +221,41 @@ render: function(full)
 
 	if (full) {
 		/* Start by setting up the sizes of each canvas */
+		var grid			= this.controller.get('grid');
 		var labels			= this.controller.get('labels');
+
+		grid.style.width	= w + 'px'; grid.width	= w;
+		grid.style.height	= h + 'px'; grid.height	= h;
 
 		chart.style.width	= w + 'px'; chart.width		= w;
 		chart.style.height	= h + 'px'; chart.height	= h;
 
 		labels.style.width	= w + 'px'; labels.width	= w;
 		labels.style.height	= h + 'px'; labels.height	= h;
+
+
+		/*
+			Draw the horizontal grid lines
+
+			Since the horizontal lines don't have to scroll they are rendered on
+			a canvas below the chart itself.
+		*/
+		this.ctx = grid.getContext('2d');
+
+		this.ctx.save();
+
+		/*
+			Adjust the canvas so that the origin is in the bottom left which
+			matches our grid.  The y axis is negative.
+		*/
+		this.ctx.translate(0, h);
+
+		/* Draw grid lines */
+		for (var y = (this.min - (this.min % 10)); y <= this.max; y += 10) {
+			this.drawHorizLine(this.getY(y),     'rgba(46, 49, 52, 1)');
+			this.drawHorizLine(this.getY(y) + 1, 'rgba(81, 86, 91, 1)');
+		}
+		this.ctx.restore();
 
 
 		/*
@@ -242,50 +274,44 @@ render: function(full)
 			do not overlap.
 		*/
 
-		var c = labels.getContext('2d');
+		this.ctx = labels.getContext('2d');
 
-		c.save();
+		this.ctx.save();
 
-		c.fillStyle	= 'rgba(0, 0, 0, 0.7)';
-		c.fillRect(0,		0, 32, h);
-		c.fillRect(w - 32,	0, 32, h);
+		this.ctx.fillStyle	= 'rgba(0, 0, 0, 0.7)';
+		this.ctx.fillRect(0,		0, 32, h);
+		this.ctx.fillRect(w - 32,	0, 32, h);
 
-		c.fillStyle	= 'rgba(255, 255, 255, 1.0)';
-		c.font		= 'bold 13px sans-serif';
-		c.textAlign	= 'center';
+		this.ctx.fillStyle	= 'rgba(255, 255, 255, 1.0)';
+		this.ctx.font		= 'bold 13px sans-serif';
+		this.ctx.textAlign	= 'center';
 
 		/*
 			Adjust the canvas so that the origin is in the bottom left which
 			matches our grid.  The y axis is negative.
 		*/
-		c.translate(0, h);
+		this.ctx.translate(0, h);
 
 
 		var i = ((this.max - this.min) / (13 - 3));
 		i = i - (i % 10);
 
 		for (var y = (this.min - (this.min % i)); y < this.max; y += i) {
-			c.fillText("" + y, 16, this.getY(y) + 5);
-			c.fillText(this.NumToStr(this.LBtoBMI(y, this.height)),
+			this.ctx.fillText("" + y, 16, this.getY(y) + 5);
+			this.ctx.fillText(this.NumToStr(this.LBtoBMI(y, this.height)),
 				w - 16, this.getY(y) + 5);
 		}
 
-		c.fillStyle	= 'rgba(255, 255, 255, 0.4)';
-		c.fillText("LBs", 16,     -(h - 16));
-		c.fillText("BMI", w - 16, -(h - 16));
+		this.ctx.fillStyle	= 'rgba(255, 255, 255, 0.4)';
+		this.ctx.fillText("LBs", 16,     -(h - 16));
+		this.ctx.fillText("BMI", w - 16, -(h - 16));
 
-		c.restore();
+		this.ctx.restore();
 	}
 
 	this.ctx = chart.getContext('2d');
 
-	/* Draw the graph background */
-	this.ctx.save();
-
-	this.ctx.fillStyle = 'rgba(57, 62, 67, 1)';
-	this.ctx.fillRect(0, 0, w, h);
-
-	this.ctx.restore();
+	this.ctx.clearRect(0, 0, w, h);
 
 
 	/*
@@ -294,20 +320,6 @@ render: function(full)
 	*/
 	this.ctx.save();
 	this.ctx.translate(0, h);
-
-
-
-	/* Draw grid lines */
-	this.ctx.save();
-	this.ctx.shadowStyle = 'rgba(0, 0, 0, 0)';
-
-	for (var y = (this.min - (this.min % 10)); y <= this.max; y += 10) {
-		// TODO WTF... The lines are like 5 pixels wide and blurry as shit...
-		//		grr... how the fuck do I fix this?
-		this.drawHorizLine(this.getY(y),     'rgba(46, 49, 52, 1)');
-		this.drawHorizLine(this.getY(y) + 1, 'rgba(81, 86, 91, 1)');
-	}
-	this.ctx.restore();
 
 
 
@@ -477,24 +489,92 @@ render: function(full)
 	this.ctx		= null;
 },
 
-dragStart: function(e)
+
+/*
+	speed.x = (float) (mass * acceleration.x * elapsed + speed.x);
+	speed.y = (float) (mass * acceleration.y * elapsed + speed.y);
+
+
+	position.x += mass * acceleration.x / 2 * elapsed * elapsed + speed.x * elapsed;
+	position.y += mass * acceleration.y / 2 * elapsed * elapsed + speed.y * elapsed;
+
+
+	speed.x *= friction;
+	speed.y *= friction;
+*/
+
+dragStart: function(event)
 {
-	this.mouseX = Event.pointerX(event.down);
-	Event.stop(e);
+	if (this.interiaTimer) {
+		window.clearInterval(this.inertiaTimer);
+		this.inertiaTimer = null;
+	}
+
+	this.mouse = {
+		x:		Event.pointerX(event.down),
+		time:	new Date().getTime(),
+		speed:	0,
+		offset:	0
+	};
+
+	Event.stop(event);
 },
 
-dragging: function(e)
+dragEnd: function(event)
 {
-	var x = Event.pointerX(event.move);
+	var x	= Event.pointerX(event.up);
 
-	if (x != this.mouseX) {
-		this.scrollOffset -= (x - this.mouseX);
-		this.mouseX = x;
+	if (x != this.mouse.x) {
+		var now	= new Date().getTime();
+
+		this.mouse.speed	= (x - this.mouse.x) / (now - this.mouse.time);
+	}
+
+	Mojo.log('Final speed: ' + this.mouse.speed);
+
+	this.inertiaTimer = window.setInterval(function()
+	{
+		var now	= new Date().getTime();
+
+		/* Apply friction */
+		this.mouse.speed *= 0.3;
+
+		var diff = (this.mouse.offset * (this.mouse.speed * (now - this.mouse.time)));
+
+Mojo.log('Moved: ' + diff);
+		if (diff) {
+			this.scrollOffset	-= diff;
+			this.render();
+
+			this.mouse.time		= now;
+		} else {
+			window.clearInterval(this.inertiaTimer);
+			this.inertiaTimer	= null;
+		}
+	}.bind(this), 100);
+},
+
+dragging: function(event)
+{
+	var x	= Event.pointerX(event.move);
+	var now	= new Date().getTime();
+
+	this.mouse.speed	= 0;
+
+	if (x != this.mouse.x) {
+		/* Save the speed in pixels/ms */
+		this.mouse.speed	= (x - this.mouse.x) / (now - this.mouse.time);
+		this.mouse.offset	= (x - this.mouse.x);
+
+		this.scrollOffset	-= this.mouse.offset;
+		this.mouse.x		= x;
 
 		this.render();
 	}
 
-	Event.stop(e);
+	this.mouse.time = new Date().getTime();
+
+	Event.stop(event);
 },
 
 
