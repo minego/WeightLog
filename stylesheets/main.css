@@ -5,15 +5,19 @@ html, body {
 	margin:			0px;
 }
 
-#chart {
+#grid {
 	z-index:		1;
 }
 
-#labels {
+#chart {
 	z-index:		2;
 }
 
-#chart, #labels {
+#labels {
+	z-index:		3;
+}
+
+canvas {
 	position:		absolute;
 	left:			0px;
 	top:			0px;
