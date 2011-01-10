@@ -15,14 +15,7 @@
 */
 
 /*
-	TODO: Optimize the display so that stuff that isn't currently visible isn't
-		  rendered.  One non-visible datapoint on each side should be to make it
-		  look correct.
-
-	TODO: When a data point's dot is tapped on move the "today" tooltip to that
-		  point, and display it's date.
-
-	TODO: Make the scrolling support inertia
+	TODO: Make the scrolling support inertia (kinda done... not happy with it)
 
 	TODO: When the user adds a record allow adding a note along with it, and
 		  display that when they tap on that record.
@@ -60,6 +53,9 @@ setup: function()
 	this.controller.listen(labels, Mojo.Event.dragging,
 		this.dragging.bindAsEventListener(this), true);
 
+	this.controller.listen(labels, Mojo.Event.tap,
+		this.tap.bindAsEventListener(this), true);
+
 
 	// TODO Load the user's saved data and preferences (height and target
 	//		weight) from preferences
@@ -77,13 +73,13 @@ setup: function()
 	this.topMargin		= 24;
 
 	/* The number of days to display.  Adjusting this will scale the chart. */
-	this.daycount		= 37;
+	this.daycount		= 9;
 
 
 	// TODO Load real data instead of this fake data
 	/* Assign some random data */
 	var d = new Date(2011, 4, 27, 0, 0, 0, 0);
-	for (var i = 0; i < 356; i++) {
+	for (var i = 0; i < 35; i++) {
 		d.setHours(d.getHours() + 24 + Math.floor(Math.random() * 32));
 		this.data[this.data.length] = {
 			'weight':	(300 - (i / 4)) + (Math.random() * 3),
@@ -103,6 +99,9 @@ setup: function()
 	this.max = Math.max(this.max, this.min + 50);
 	this.min -= 20;
 	this.max += 20;
+
+	/* The selected item defaults to the last one */
+	this.selected		= this.data.length - 1;
 
 
 	/* This will be filled out during render() */
@@ -128,6 +127,9 @@ cleanup: function()
 		this.dragEnd.bind(this));
 	this.controller.stopListening(labels, Mojo.Event.dragging,
 		this.dragging.bind(this));
+
+	this.controller.stopListening(labels, Mojo.Event.tap,
+		this.tap.bind(this));
 },
 
 screenSizeChanged: function()
@@ -361,17 +363,22 @@ render: function(full)
 		}
 	}
 
-	this.ctx.beginPath();
-	this.ctx.moveTo(0, this.getY(this.data[i].weight));
+	if (i < this.data.length) {
+		this.ctx.beginPath();
+		this.ctx.moveTo(this.getX(this.data[i].date),
+						this.getY(this.data[i].weight));
+		i++;
 
-	for (; i < this.data.length; i++) {
-		this.ctx.lineTo(this.getX(this.data[i].date), this.getY(this.data[i].weight));
+		for (; i < this.data.length; i++) {
+			this.ctx.lineTo(this.getX(this.data[i].date),
+							this.getY(this.data[i].weight));
 
-		if (this.data[i].date >= enddate) {
-			break;
+			if (this.data[i].date >= enddate) {
+				break;
+			}
 		}
+		this.ctx.stroke();
 	}
-	this.ctx.stroke();
 
 	/*
 		Draw a projected line...
@@ -379,28 +386,22 @@ render: function(full)
 		TODO: Calculate a rate based on the last few days of data and draw a
 		projected line to the end of the graph based on that rate.
 
-		TODO: Draw a projected line for the past as well based on the rate of
-		the first few records.
-
 		TODO: Make the projected lines fade as they get further away indicating
 		that the data is less accurate.
-
-
-		TODO: Maybe a dotted line isn't the best approach... it seems to be
-		VERY slow on the device.  Maybe a dimmer line would work better??
 	*/
 	if (this.data[this.data.length - 1].date <= enddate) {
 		var tardate = new Date(this.data[this.data.length - 1].date.getTime());
 
 		/* Add 30 days... */
 		tardate.setDate(tardate.getDate() + 30);
-		this.ctx.dashedLineTo(
-			this.getX(this.data[this.data.length - 1].date),
-			this.getY(this.data[i - 1].weight),
+		this.ctx.strokeStyle = 'rgba( 79, 121, 159, 0.3)';
 
-			this.getX(tardate), this.getY(this.data[i - 1].weight - 20),
-			[2, 7]);
+		this.ctx.beginPath();
+		this.ctx.moveTo(this.getX(this.data[this.data.length - 1].date),
+						this.getY(this.data[i - 1].weight));
 
+		this.ctx.lineTo(this.getX(tardate),
+						this.getY(this.data[i - 1].weight - 20));
 		this.ctx.stroke();
 	}
 
@@ -425,17 +426,18 @@ render: function(full)
 	this.ctx.restore();
 
 
-	// TODO This should continue to default to the most recent point, but we
-	//		should allow the user to select any point by tapping on it.
+	if (this.selected >= 0 && this.selected < this.data.length) {
+		this.showHint("" +
+			this.data[this.selected].date.getMonth()		+ "/" +
+			this.data[this.selected].date.getDate()			+ " (" +
+			this.NumToStr(this.data[this.selected].weight)	+ ")",
 
-	// TODO This label should only be today if the selected point is in fact
-	//		today.  For any other day show the month/day.
-	this.showHint("TODAY (" + this.NumToStr(this.data[i - 1].weight) + ")",
-		this.getX(this.data[i - 1].date),
-		this.getY(this.data[i - 1].weight) - 3,
+			this.getX(this.data[this.selected].date),
+			this.getY(this.data[this.selected].weight) - 3,
 
-		'rgba(255, 255, 255, 1)',
-		'rgba( 79, 121, 159, 1)', false);
+			'rgba(255, 255, 255, 1)',
+			'rgba( 79, 121, 159, 1)', false);
+	}
 
 
 	/*
@@ -577,6 +579,39 @@ dragging: function(event)
 	Event.stop(event);
 },
 
+tap: function(event)
+{
+	var x	= Event.pointerX(event.down);
+	var d	= this.getDate(this.scrollOffset + x);
+
+	if (this.interiaTimer) {
+		window.clearInterval(this.inertiaTimer);
+		this.inertiaTimer = null;
+	}
+
+	/* Find the data point that is closest to where the user clicked */
+	for (var i = 0; i < this.data.length; i++) {
+		if (this.data[i].date > d) {
+			break;
+		}
+	}
+
+	this.selected = i;
+	if (i < this.data.length && i > 0) {
+		/*
+			The user clicked between data[i - 1] and data[i], but which is one
+			is the closest to the click?
+		*/
+		var a = d.getTime() - this.data[i - 1].date.getTime();
+		var b = this.data[i].date.getTime() - d.getTime();
+
+		if (a < b) {
+			this.selected--;
+		}
+	}
+
+	this.render();
+},
 
 /*
 	****************************************************************************
@@ -665,9 +700,8 @@ drawHorizLine: function(y, style)
 	// this.ctx.lineWidth = 0.0001;
 
 	this.ctx.beginPath();
-// TODO: I don't want to do this floor here...
-	this.ctx.moveTo(0, Math.floor(y));
-	this.ctx.lineTo(w, Math.floor(y));
+	this.ctx.moveTo(0, y);
+	this.ctx.lineTo(w, y);
 
 	this.ctx.stroke();
 	this.ctx.restore();
