@@ -17,9 +17,10 @@
 /*
 	TODO: Should year be hidden??
 
-	TODO: Make it go horizontal already
+	TODO: Remeber the time scale the user last selected and default to that on
+		  the next launch.
 
-	TODO: Make sure that the buttons don't hide data
+	TODO: Make sure that the buttons don't hide data.
 
 	TODO: Make the scrolling support inertia (kinda done... not happy with it)
 
@@ -39,6 +40,8 @@ var ChartAssistant = Class.create({
 setup: function()
 {
 	var w = parseInt(this.controller.window.innerWidth);
+
+	this.controller.stageController.setWindowOrientation('free');
 
 	/* I'd like consistent events, regardless of the orientation */
 	this.controller.useLandscapePageUpDown(false);
@@ -75,6 +78,9 @@ setup: function()
 				{
 					command:		'newrecord',
 					label:			$L('Enter current weight')
+				}, {
+					command:		'editrecord',
+					label:			$L('Modify selected record')
 				}, {
 					command:		'today',
 					label:			$L('Today')
@@ -137,10 +143,12 @@ setup: function()
 	this.target			= 183;
 
 	this.scrollOffset	= 0;
-	this.topMargin		= 24;
+	this.topMargin		= 45;
+	this.bottomMargin	= 50;
 
 	/* The number of days to display.  Adjusting this will scale the chart. */
 	this.daycount		= 9;
+	this.daywidth		= (w / this.daycount);
 
 
 	// TODO Load real data instead of this fake data
@@ -149,7 +157,7 @@ setup: function()
 	for (var i = 0; i < 35; i++) {
 		d.setHours(d.getHours() + 24 + Math.floor(Math.random() * 32));
 		this.data[this.data.length] = {
-			'weight':	(300 - (i / 4)) + (Math.random() * 3),
+			'weight':	(300 - (i / 4)) + (Math.random() * 7),
 			'date':		new Date(d.getTime())
 		};
 	}
@@ -163,9 +171,12 @@ setup: function()
 		this.max = Math.max(this.max, this.data[i].weight);
 	}
 
+	/* Pad a bid */
+	this.max += 10;
+	this.min -= 10;
+
+	/* Make sure we have a range of at least 50 lbs */
 	this.max = Math.max(this.max, this.min + 50);
-	this.min -= 20;
-	this.max += 20;
 
 	/* The selected item defaults to the last one */
 	this.selected		= this.data.length - 1;
@@ -217,6 +228,20 @@ screenSizeChanged: function()
 	this.render(true);
 },
 
+orientationChanged: function(orientation)
+{
+	if (this.daywidth) {
+		/* Keep the display centered on the same point */
+		var w				= parseInt(this.controller.window.innerWidth);
+
+		var oldwidth		= this.daywidth;
+		var daywidth		= (w / this.daycount);
+
+		this.scrollOffset	= ((this.scrollOffset / oldwidth) * daywidth);
+		this.render(true);
+	}
+},
+
 handleCommand: function(event)
 {
 	var cmd	= null;
@@ -253,24 +278,36 @@ handleCommand: function(event)
 	}
 
 
-	// TODO: Setup the menu.  Right now none of these events will be called
-	// because the default menu is in place
+	// TODO Setup the menu.  Right now none of these events will be called
+	//		because the default menu is in place
 	switch (cmd) {
 		case Mojo.Menu.prefsCmd:
-			// TODO: Create a prefs page
+			// TODO Create a prefs page
 			this.controller.stageController.pushScene('prefs');
 			break;
 
 		case 'about':
-			// TODO: Create an about page.  It has to give credit for the icon
+			// TODO Create an about page.  It has to give credit for the icon
 			// (see http://www.chris-wallace.com/2009/10/18/monday-freebie-vector-scale-icon/ )
 			this.controller.stageController.pushScene('about');
 			break;
 
 		case Mojo.Menu.helpCmd:
-			// TODO: Create a help page
+			// TODO Create a help page
 			this.controller.stageController.pushScene('help');
 			break;
+
+		case 'newrecord':
+			// TODO Create a new record dialog (This should be a dialog, not
+			//		a page...
+			this.controller.stageController.pushScene('newrecord');
+			break;
+
+		case 'editrecord':
+			// TODO: Create an edit record page or dialog
+			this.controller.stageController.pushScene('editrecord');
+			break;
+
 
 		case 'week':
 			this.setDayCount(9);
@@ -308,6 +345,10 @@ render: function(full)
 	var w					= parseInt(this.controller.window.innerWidth);
 	var chart				= this.controller.get('chart');
 
+
+	/* This is used frequently, so save it for ease of use */
+	this.daywidth			= (w / this.daycount);
+
 	if (full) {
 		/* Start by setting up the sizes of each canvas */
 		var grid			= this.controller.get('grid');
@@ -324,82 +365,80 @@ render: function(full)
 
 
 		/*
-			Draw the horizontal grid lines
+			Draw the labels and grid lines for weights and BMI values
 
-			Since the horizontal lines don't have to scroll they are rendered on
-			a canvas below the chart itself.
-		*/
-		this.ctx = grid.getContext('2d');
-
-		this.ctx.save();
-
-		/*
-			Adjust the canvas so that the origin is in the bottom left which
-			matches our grid.  The y axis is negative.
-		*/
-		this.ctx.translate(0, h);
-
-		/* Draw grid lines */
-		for (var y = (this.min - (this.min % 10)); y <= this.max; y += 10) {
-			this.drawHorizLine(this.getY(y),     'rgba(46, 49, 52, 1)');
-			this.drawHorizLine(this.getY(y) + 1, 'rgba(81, 86, 91, 1)');
-		}
-		this.ctx.restore();
-
-
-		/*
-			Draw the labels for weights and BMI values
-
-			The labels only need to be updated if something major changes, such
-			as the screen size changing.  The labels are drawn on their own
-			canvas that sits on top of the chart canvas.
+			The labels and grid lines do not need to scroll.  It only makes
+			sense to render them when something changes, like the screen
+			orientation.  The labels are drawn on a canvas on top of the chart
+			and the lines on a canvas below it.
 
 			The lines are spaced at 10 lb intervals, and if possible the
 			labels should be as well.  If the scale is large enough then
 			this won't make sense though, so the interval will need to
 			be larger.
 
-			The font is 13px, so increase the interval until the labels
-			do not overlap.
+			Use this.ctx for the grid so that we can use this.drawHorizLine() to
+			draw the lines.
 		*/
+		this.ctx	= grid.getContext('2d');
+		var c		= labels.getContext('2d');
 
-		this.ctx = labels.getContext('2d');
+		this.ctx.clearRect(0, 0, w, h);
+		c.clearRect(0, 0, w, h);
 
 		this.ctx.save();
+		c.save();
 
-		this.ctx.fillStyle	= 'rgba(0, 0, 0, 0.7)';
-		this.ctx.fillRect(0,		0, 32, h);
-		this.ctx.fillRect(w - 32,	0, 32, h);
+		c.fillStyle	= 'rgba(0, 0, 0, 0.7)';
+		c.fillRect(0,		0, 32, h);
+		c.fillRect(w - 32,	0, 32, h);
 
-		this.ctx.fillStyle	= 'rgba(255, 255, 255, 1.0)';
-		this.ctx.font		= 'bold 13px sans-serif';
-		this.ctx.textAlign	= 'center';
+		c.fillStyle	= 'rgba(255, 255, 255, 1.0)';
+		c.font		= 'bold 13px sans-serif';
+		c.textAlign	= 'center';
 
 		/*
 			Adjust the canvas so that the origin is in the bottom left which
 			matches our grid.  The y axis is negative.
 		*/
+		c.translate(0, h);
 		this.ctx.translate(0, h);
 
 
 		var i = ((this.max - this.min) / (13 - 3));
 		i = i - (i % 10);
 
-		for (var y = (this.min - (this.min % i)); y < this.max; y += i) {
-			this.ctx.fillText("" + y, 16, this.getY(y) + 5);
-			this.ctx.fillText(this.NumToStr(this.LBtoBMI(y, this.height)),
-				w - 16, this.getY(y) + 5);
+		var y = this.getWeight(0);
+		y = y - (y % i) + i;
+
+		for (;; y += 10) {
+			var yo = this.getY(y);
+
+			if ((yo - 7) <= -(h - 16)) {
+				break;
+			}
+
+			/* Draw a label */
+			if (0 == (y % i)) {
+				c.fillText("" + y, 16, yo + 5);
+				c.fillText(this.NumToStr(this.LBtoBMI(y, this.height)),
+					w - 16, yo + 5);
+			}
+
+			/* Draw the grid line */
+			this.drawHorizLine(this.getY(y),     'rgba(46, 49, 52, 1)');
+			this.drawHorizLine(this.getY(y) + 1, 'rgba(81, 86, 91, 1)');
 		}
 
-		this.ctx.fillStyle	= 'rgba(255, 255, 255, 0.4)';
-		this.ctx.fillText("LBs", 16,     -(h - 16));
-		this.ctx.fillText("BMI", w - 16, -(h - 16));
+		c.fillStyle	= 'rgba(255, 255, 255, 0.4)';
+		c.fillText("LBs", 16,     -(h - 16));
+		c.fillText("BMI", w - 16, -(h - 16));
 
+		c.restore();
 		this.ctx.restore();
 	}
 
 	this.ctx = chart.getContext('2d');
-
 	this.ctx.clearRect(0, 0, w, h);
 
 
@@ -537,7 +576,7 @@ render: function(full)
 	this.ctx.textAlign	= 'center';
 
 	this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-	this.ctx.fillRect(0, -(h - this.topMargin), w, -h);
+	this.ctx.fillRect(0, -(h - 24), w, -h);
 
 	/*
 		Draw data labels for all visible days
@@ -736,23 +775,34 @@ LBtoBMI: function(lbs, inches)
 getY: function(weight)
 {
 	var h		= parseInt(this.controller.window.innerHeight);
-	var r		= (h - this.topMargin) / (this.max - this.min);
+	var r		= (h - (this.topMargin + this.bottomMargin)) / (this.max - this.min);
 
-	return(-((weight - this.min) * r));
+	return(-((weight - this.min) * r) - this.bottomMargin);
+},
+
+
+/*
+	Do the inverse of the getY function above.  Take an offset in pixels and
+	return a weight based on the scale of the graph.
+*/
+getWeight: function(y)
+{
+	var h		= parseInt(this.controller.window.innerHeight);
+	var r		= (h - (this.topMargin + this.bottomMargin)) / (this.max - this.min);
+
+	return(((-y - this.bottomMargin) / r) + this.min);
 },
 
 /* Return the X offset on the graph based on a specific date */
 getX: function(date)
 {
-	var w			= parseInt(this.controller.window.innerWidth);
-	var daywidth	= (w / this.daycount);
 	var start		= this.data[0].date.getTime();
 	var end			= date.getTime();
 
 	var days		= (end - start) / (86400000);
 
 	/* Pad the first point by 32 for the weight labels */
-	return((32 + (days * daywidth)) - this.scrollOffset);
+	return((32 + (days * this.daywidth)) - this.scrollOffset);
 },
 
 /*
@@ -763,9 +813,7 @@ getX: function(date)
 */
 getDate: function(x)
 {
-	var w			= parseInt(this.controller.window.innerWidth);
-	var daywidth	= (w / this.daycount);
-	var ms			= ((x - 32) / daywidth) * (86400000);
+	var ms			= ((x - 32) / this.daywidth) * (86400000);
 
 	return(new Date(this.data[0].date.getTime() + ms));
 },
@@ -849,14 +897,12 @@ setDayCount: function(daycount)
 	}
 
 	var w				= parseInt(this.controller.window.innerWidth);
-	var daywidth		= (w / this.daycount);
 	var so				= this.scrollOffset + (w / 2);
-	var days			= so / daywidth;
+	var days			= so / this.daywidth;
 
 	this.daycount		= daycount;
-
-	daywidth			= (w / this.daycount);
-	this.scrollOffset	= (days * daywidth) - (w / 2);
+	this.daywidth		= (w / this.daycount);
+	this.scrollOffset	= (days * this.daywidth) - (w / 2);
 
 	this.render();
 }
