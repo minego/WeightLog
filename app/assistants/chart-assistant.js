@@ -59,8 +59,6 @@ setup: function()
 
 	this.controller.listen(labels, Mojo.Event.dragStart,
 		this.dragStart.bindAsEventListener(this), true);
-	this.controller.listen(labels, Mojo.Event.dragEnd,
-		this.dragEnd.bindAsEventListener(this), true);
 	this.controller.listen(labels, Mojo.Event.dragging,
 		this.dragging.bindAsEventListener(this), true);
 
@@ -206,8 +204,6 @@ cleanup: function()
 
 	this.controller.stopListening(labels, Mojo.Event.dragStart,
 		this.dragStart.bind(this));
-	this.controller.stopListening(labels, Mojo.Event.dragEnd,
-		this.dragEnd.bind(this));
 	this.controller.stopListening(labels, Mojo.Event.dragging,
 		this.dragging.bind(this));
 
@@ -633,74 +629,20 @@ render: function(full)
 
 dragStart: function(event)
 {
-	if (this.interiaTimer) {
-		window.clearInterval(this.inertiaTimer);
-		this.inertiaTimer = null;
-	}
-
-	this.mouse = {
-		x:		Event.pointerX(event.down),
-		time:	new Date().getTime(),
-		speed:	0,
-		offset:	0
-	};
-
+	this.mouseX = Event.pointerX(event.down);
 	Event.stop(event);
-},
-
-dragEnd: function(event)
-{
-	var x	= Event.pointerX(event.up);
-
-	if (x != this.mouse.x) {
-		var now	= new Date().getTime();
-
-		this.mouse.speed	= (x - this.mouse.x) / (now - this.mouse.time);
-	}
-
-	Mojo.log('Final speed: ' + this.mouse.speed);
-
-	this.inertiaTimer = window.setInterval(function()
-	{
-		var now	= new Date().getTime();
-
-		/* Apply friction */
-		this.mouse.speed *= 0.3;
-
-		var diff = (this.mouse.offset * (this.mouse.speed * (now - this.mouse.time)));
-
-Mojo.log('Moved: ' + diff);
-		if (diff) {
-			this.scrollOffset	-= diff;
-			this.render();
-
-			this.mouse.time		= now;
-		} else {
-			window.clearInterval(this.inertiaTimer);
-			this.inertiaTimer	= null;
-		}
-	}.bind(this), 100);
 },
 
 dragging: function(event)
 {
 	var x	= Event.pointerX(event.move);
-	var now	= new Date().getTime();
 
-	this.mouse.speed	= 0;
-
-	if (x != this.mouse.x) {
-		/* Save the speed in pixels/ms */
-		this.mouse.speed	= (x - this.mouse.x) / (now - this.mouse.time);
-		this.mouse.offset	= (x - this.mouse.x);
-
-		this.scrollOffset	-= this.mouse.offset;
-		this.mouse.x		= x;
+	if (x != this.mouseX) {
+		this.scrollOffset -= (x - this.mouseX);
+		this.mouseX = x;
 
 		this.render();
 	}
-
-	this.mouse.time = new Date().getTime();
 
 	Event.stop(event);
 },
@@ -709,11 +651,6 @@ tap: function(event)
 {
 	var x	= Event.pointerX(event.down);
 	var d	= this.getDate(this.scrollOffset + x);
-
-	if (this.interiaTimer) {
-		window.clearInterval(this.inertiaTimer);
-		this.inertiaTimer = null;
-	}
 
 	/* Find the data point that is closest to where the user clicked */
 	for (var i = 0; i < this.data.length; i++) {
