@@ -7,9 +7,12 @@
 	the first launch....  2 drop downs?
 -->
 
-<div style="width: 100%; height: 200px;">
-	<canvas id="led" width="280" height="200"></canvas>
+<div style="width: 100%; height: 150px;">
+	<canvas id="led" width="280" height="150"></canvas>
 </div>
+
+<div x-mojo-element="Button" id="enterweight"></div>
+<div x-mojo-element="Button" id="viewchart"></div>
 
 <div class="palm-group">
 	<div class="palm-group-title"><span class="translate">Options</span></div>
@@ -23,19 +26,6 @@
 		<div class="palm-row last">
 			<div class="palm-row-wrapper">
 				<div id="units"		x-mojo-element="ListSelector"></div>
-			</div>
-		</div>
-	</div>
-</div>
-
-<div class="palm-group">
-	<div class="palm-group-title"><span class="translate">History</span></div>
-	<div class="palm-list">
-
-		<div class="palm-row first last">
-			<div class="palm-row-wrapper" id="viewchart">
-<!-- TODO: Change this to a real button... -->
-				<div class="translate title">View history chart</div>
 			</div>
 		</div>
 	</div>

@@ -302,7 +302,7 @@ handleCommand: function(event)
 		case 'newrecord':
 			// TODO Create a new record dialog (This should be a dialog, not
 			//		a page...
-			this.controller.stageController.pushScene('newrecord');
+			this.controller.stageController.popScene();
 			break;
 
 		case 'editrecord':
