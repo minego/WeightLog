@@ -58,6 +58,21 @@ setup: function()
 		]
 	}, this.p);
 
+	this.controller.setupWidget('enterweight', {
+		type:			Mojo.Widget.button
+	}, {
+		buttonLabel:	$L('Enter Weight'),
+		buttonClass:	'primary'
+	}, this);
+
+	this.controller.setupWidget('viewchart', {
+		type:			Mojo.Widget.button
+	}, {
+		buttonLabel:	$L('View History'),
+		buttonClass:	'primary'
+	}, this);
+
+
 	this.controller.listen(this.controller.get('viewchart'), Mojo.Event.tap,
 		this.viewChart.bindAsEventListener(this));
 
@@ -229,7 +244,7 @@ renderLED: function(weight)
 {
 	var led		= this.controller.get('led');
 	var w		= 280;
-	var h		= 200;
+	var h		= 150;
 
 	led.width	= w; led.style.width	= w + "px";
 	led.height	= h; led.style.height	= h + "px";
