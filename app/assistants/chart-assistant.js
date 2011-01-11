@@ -31,8 +31,6 @@ var ChartAssistant = Class.create({
 
 setup: function()
 {
-	var w = parseInt(this.controller.window.innerWidth);
-
 	if (!this.p) {
 		this.p = new Preferences('weightlog');
 	}
@@ -79,7 +77,6 @@ setup: function()
 					command:		'today',
 					label:			$L('Today')
 				},
-				Mojo.Menu.prefsItem,
 				{
 					command:		'about',
 					label:			$L('About')
@@ -149,7 +146,26 @@ setup: function()
 			break;
 	}
 
-	// TODO: Much of this probably needs to be done on activation...
+	/* The selected item defaults to the last one */
+	this.selected		= this.p.data.length - 1;
+
+	/* This will be filled out during render() */
+	this.ctx			= null;
+},
+
+ready: function()
+{
+},
+
+activate: function()
+{
+	var w = parseInt(this.controller.window.innerWidth);
+
+	if (this.p) {
+		this.p.load();
+	}
+	this.controller.stageController.setWindowOrientation('free');
+
 	/* Determine the smallest and largest values in our dataset */
 	this.min = this.target;
 	this.max = 0;
@@ -166,29 +182,12 @@ setup: function()
 	/* Make sure we have a range of at least 50 lbs */
 	this.max = Math.max(this.max, this.min + 50);
 
-	/* The selected item defaults to the last one */
-	this.selected		= this.p.data.length - 1;
-
 	/* The default view should make the most recent entry visible */
 	if (this.p.data.length) {
 		this.scrollOffset = this.getX(this.p.data[this.selected].date) - (w * 0.7);
 	}
 
-	/* This will be filled out during render() */
-	this.ctx			= null;
-},
-
-ready: function()
-{
-	this.screenSizeChanged();
-},
-
-activate: function()
-{
-	if (this.p) {
-		this.p.load();
-	}
-	this.controller.stageController.setWindowOrientation('free');
+	this.render(true);
 },
 
 cleanup: function()
@@ -270,41 +269,34 @@ handleCommand: function(event)
 		}
 	}
 
-
-	// TODO Setup the menu.  Right now none of these events will be called
-	//		because the default menu is in place
 	switch (cmd) {
-		case Mojo.Menu.prefsCmd:
-			// TODO Create a prefs page
-			this.controller.stageController.pushScene('prefs');
-			break;
-
 		case 'about':
 			// TODO Create an about page.  It has to give credit for the icon
 			// (see http://www.chris-wallace.com/2009/10/18/monday-freebie-vector-scale-icon/ )
 			this.controller.stageController.pushScene('about');
 			break;
 
-		case Mojo.Menu.helpCmd:
-			// TODO Create a help page
-			this.controller.stageController.pushScene('help');
-			break;
-
-		case 'newrecord':
-			// TODO Create a new record dialog (This should be a dialog, not
-			//		a page...
-			this.controller.stageController.pushScene('newrecord');
-			break;
-
 		case 'back':
 			this.controller.stageController.popScene();
 			break;
 
-		case 'editrecord':
-			// TODO: Create an edit record page or dialog
-			this.controller.stageController.pushScene('editrecord');
+		case 'newrecord':
+			this.controller.stageController.pushScene('enterweight');
 			break;
 
+		case 'editrecord':
+			// TODO Push info about the record to edit
+			this.controller.stageController.pushScene('enterweight');
+			break;
+
+		case 'today':
+			if (this.p.data.length) {
+				this.scrollOffset = this.getX(this.p.data[this.selected].date) - (w * 0.7);
+			} else {
+				this.scrollOffset = 0;
+			}
+			render();
+			break;
 
 		case 'week':
 			this.setDayCount(9);
@@ -552,7 +544,7 @@ render: function(full)
 
 	if (this.selected >= 0 && this.selected < this.p.data.length) {
 		this.showHint("" +
-			this.p.data[this.selected].date.getMonth()			+ "/" +
+			this.p.data[this.selected].date.getMonth() + 1		+ "/" +
 			this.p.data[this.selected].date.getDate()			+ " (" +
 			this.NumToStr(this.p.data[this.selected].weight)	+ ")",
 
@@ -599,7 +591,7 @@ render: function(full)
 	for (;;) {
 		var x = this.getX(d);
 
-		this.ctx.fillText("" + d.getMonth() + "/" + d.getDate(),
+		this.ctx.fillText("" + (d.getMonth() + 1) + "/" + d.getDate(),
 			x, -(h - 17));
 
 		d.setDate(d.getDate() + i);

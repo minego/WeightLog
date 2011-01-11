@@ -16,6 +16,12 @@
 
 var LaunchAssistant = Class.create({
 
+// TODO	Move the LED number into it's own .js file and make it scale to the
+//		specified size.  Then consider displaying additional information with it
+//		like "average daily change" etc.
+
+// TODO	Let the user specify their target on the main screen
+
 setup: function()
 {
     $$('.translate').each(function(e) { e.update($L(e.innerHTML)); });
@@ -310,9 +316,7 @@ handleCommand: function(event)
 		}
 	}
 
-
-	// TODO Setup the menu.  Right now none of these events will be called
-	//		because the default menu is in place
+	// TODO: Setup the menu
 	switch (cmd) {
 		case 'reset':
 			this.p.reset();
@@ -321,44 +325,16 @@ handleCommand: function(event)
 			this.renderLED(0);
 			break;
 
-		case Mojo.Menu.prefsCmd:
-			// TODO Create a prefs page
-			this.controller.stageController.pushScene('prefs');
-			break;
-
 		case 'about':
 			// TODO Create an about page.  It has to give credit for the icon
 			// (see http://www.chris-wallace.com/2009/10/18/monday-freebie-vector-scale-icon/ )
 			this.controller.stageController.pushScene('about');
 			break;
 
-		case Mojo.Menu.helpCmd:
-			// TODO Create a help page
-			this.controller.stageController.pushScene('help');
-			break;
-
 		case 'newrecord':
 			// TODO Create a new record dialog (This should be a dialog, not
 			//		a page...
 			this.controller.stageController.pushScene('newrecord');
-			break;
-
-		case 'editrecord':
-			// TODO: Create an edit record page or dialog
-			this.controller.stageController.pushScene('editrecord');
-			break;
-
-
-		case 'week':
-			this.setDayCount(9);
-			break;
-
-		case 'month':
-			this.setDayCount(35);
-			break;
-
-		case 'year':
-			this.setDayCount(356);
 			break;
 
 		default:
