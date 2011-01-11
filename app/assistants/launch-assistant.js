@@ -14,25 +14,6 @@
 	ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/*
-	TODO: When the 'Enter Weight' button is pressed (or the + in the chart)
-		  pop up a dialog (not a full scene) with an "IntegerPicker" for each
-		  digit of the weight...  It should also have a date and time picker
-		  (defaulting to now) and a "note" field.
-
-		  When saving make sure that the values are sorted.  If the time on a
-		  new field is in the past then it needs to be inserted in the right
-		  spot.
-
-		  What should the dialog look like?  Perhaps the LED number can be moved
-		  into a model, and then a number pad can be displayed.  This dialog
-		  would also need to handle keystrokes...
-
-	TODO: When the user edits a selected entry popup the same dialog with the
-		  values filled out.  If saved then overwrite the previous values.  It
-		  must have a cancel and delete button as well.
-*/
-
 var LaunchAssistant = Class.create({
 
 setup: function()
