@@ -15,16 +15,33 @@
 
 <div class="palm-group">
 	<div class="palm-group-title"><span class="translate">Options</span></div>
-	<div class="palm-list">
-		<div class="palm-row first" x-mojo-tap-highlight="momentary">
-			<div class="palm-row-wrapper">
-				<div id="height"	x-mojo-element="ListSelector"></div>
-			</div>
-		</div>
+		<div class="palm-list">
 
-		<div class="palm-row last">
-			<div class="palm-row-wrapper">
-				<div id="units"		x-mojo-element="ListSelector"></div>
+			<div class="palm-row first last" x-mojo-tap-highlight="momentary">
+				<div class="palm-row-wrapper">
+					<div id="height"	x-mojo-element="ListSelector"></div>
+				</div>
+			</div>
+
+<!--
+			<div class="palm-row last">
+				<div class="palm-row-wrapper">
+					<div id="units"		x-mojo-element="ListSelector"></div>
+				</div>
+			</div>
+-->
+		</div>
+	</div>
+</div>
+
+<div class="palm-group">
+	<div class="palm-group-title"><span class="translate">Target Weight</span></div>
+	<div class="palm-list">
+		<div class="palm-row first last">
+			<div class="palm-row-wrapper textfield-group" x-mojo-focus-highlight="true">
+				<div class="title">
+					<div x-mojo-element="TextField" name="textField" id="target"></div>
+				</div>
 			</div>
 		</div>
 	</div>

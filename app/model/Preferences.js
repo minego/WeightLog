@@ -50,19 +50,15 @@ Preferences.prototype.load = function()
 		this.height	= prefs['height'];
 	}
 
+	if (prefs['target'] != undefined) {
+		this.target	= prefs['target'];
+	}
+
 	if (prefs['data'] != undefined) {
 		this.data	= prefs['data'];
 
 		for (var i = 0; i < this.data.length; i++) {
 			this.data[i].date = new Date(this.data[i].date);
-		}
-	}
-
-	if (prefs['target'] != undefined) {
-		this.target	= prefs['target'];
-
-		for (var i = 0; i < this.target.length; i++) {
-			this.target[i].date = new Date(this.target[i].date);
 		}
 	}
 
@@ -84,9 +80,6 @@ Preferences.prototype.dump = function()
 	for (var i = 0; i < dump.data.length; i++) {
 		dump.data[i].date = dump.data[i].date.getTime();
 	}
-	for (var i = 0; i < dump.target.length; i++) {
-		dump.target[i].date = dump.target[i].date.getTime();
-	}
 
 	return(dump);
 };
@@ -98,11 +91,11 @@ Preferences.prototype.save = function()
 
 Preferences.prototype.reset = function()
 {
-	this.height		= this.height || (5 * 12) + 6;
-	this.units		= this.height || 'US';
-	this.scale		= this.height || 'week';
+	this.height		= this.height	|| (5 * 12) + 6;
+	this.units		= this.units	|| 'US';
+	this.scale		= this.scale	|| 'week';
+	this.target		= this.target	|| 0;
 
 	this.data		= [];
-	this.target		= [];
 };
 

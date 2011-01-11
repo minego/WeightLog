@@ -20,8 +20,6 @@ var LaunchAssistant = Class.create({
 //		specified size.  Then consider displaying additional information with it
 //		like "average daily change" etc.
 
-// TODO	Let the user specify their target on the main screen
-
 setup: function()
 {
     $$('.translate').each(function(e) { e.update($L(e.innerHTML)); });
@@ -56,6 +54,7 @@ setup: function()
 	}, this.p);
 
     this.controller.setupWidget('units', {
+		disabled:		true,
 		label:			$L('Units'),
 		modelProperty:	'units',
 		choices:		[
@@ -63,6 +62,34 @@ setup: function()
 			{ label: $L('metric'),	value: 'metric'	}
 		]
 	}, this.p);
+
+	this.target = "";
+	if (this.p.target > 0) {
+		this.target += this.p.target;
+	}
+
+	this.controller.setupWidget('target', {
+		modelProperty:		'target',
+		autoFocus:			false,
+		modifierState:		Mojo.Widget.numLock,
+		maxLength:			5,
+		changeOnKeyPress:	false,
+		label:				$L('Target Weight'),
+		hintText:			$L('Enter Target Weight'),
+		charsAllow:			function(c)
+		{
+			/* Allow deleteKey for use with the emulator */
+			if (c == Mojo.Char.period || c == Mojo.Char.deleteKey) {
+				return(true);
+			}
+
+			if (c >= Mojo.Char.asciiZero && c <= Mojo.Char.asciiNine) {
+				return(true);
+			}
+
+			return(false);
+		}
+	}, this);
 
 	this.controller.setupWidget('enterweight', {
 		type:			Mojo.Widget.button
@@ -82,6 +109,12 @@ setup: function()
 	this.controller.listen(this.controller.get('viewchart'), Mojo.Event.tap,
 		this.viewChart.bindAsEventListener(this));
 
+
+
+	this.controller.listen('target',	Mojo.Event.propertyChange, this.change.bind(this));
+	this.controller.listen('height',	Mojo.Event.propertyChange, this.change.bind(this));
+	this.controller.listen('units',		Mojo.Event.propertyChange, this.change.bind(this));
+
 	this.activate();
 },
 
@@ -91,6 +124,14 @@ ready: function()
 
 cleanup: function()
 {
+	this.controller.stopListening('target',	Mojo.Event.propertyChange, this.change.bind(this));
+	this.controller.stopListening('height',	Mojo.Event.propertyChange, this.change.bind(this));
+	this.controller.stopListening('units',	Mojo.Event.propertyChange, this.change.bind(this));
+
+	this.controller.stopListening(this.controller.get('enterweight'), Mojo.Event.tap,
+		this.enterWeight.bindAsEventListener(this));
+	this.controller.stopListening(this.controller.get('viewchart'), Mojo.Event.tap,
+		this.viewChart.bindAsEventListener(this));
 },
 
 activate: function()
@@ -109,8 +150,12 @@ activate: function()
 	this.renderLED(this.lastweight);
 },
 
-deactivate: function()
+change: function()
 {
+	this.p.target = this.target * 1;
+	if (isNaN(this.p.target)) {
+		this.p.target = 0;
+	}
     this.p.save();
 },
 
@@ -121,7 +166,7 @@ viewChart: function()
 
 enterWeight: function()
 {
-	this.controller.stageController.pushScene('enterweight');
+	this.controller.stageController.pushScene('enterweight', this.p, NaN);
 },
 
 horizLine: function(ctx, x, y, l)
@@ -332,8 +377,6 @@ handleCommand: function(event)
 			break;
 
 		case 'newrecord':
-			// TODO Create a new record dialog (This should be a dialog, not
-			//		a page...
 			this.controller.stageController.pushScene('newrecord');
 			break;
 

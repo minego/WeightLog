@@ -14,18 +14,9 @@
 	ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/*
-	TODO: Should year be hidden??
+// TODO Should year be hidden??
 
-	TODO: Support units other than pound...
-
-	TODO: Allow changing the target weight, and record that in the same way that
-		  the user's weight is recorded.  But for each new record save one with
-		  the previous value one milisecond before.  This will keep all of it's
-		  lines level, but show the user what their targets had been in the
-		  past.  (Don't show circles on the target line though...)
-*/
-
+// TODO Support units other than pound...
 
 var ChartAssistant = Class.create({
 
@@ -86,6 +77,7 @@ setup: function()
 		}
 	);
 
+Mojo.log('this.p.scale: ' + this.p.scale);
 	this.controller.setupWidget(Mojo.Menu.commandMenu,
 		{
 			omitDefaultItems:		true,
@@ -121,10 +113,6 @@ setup: function()
 
 	this.min			= 0;
 	this.max			= 0;
-
-	// TODO: Load the 'target' data from preferences
-	/* The user's target weight */
-	this.target			= 183;
 
 	this.scrollOffset	= 0;
 	this.topMargin		= 45;
@@ -167,8 +155,12 @@ activate: function()
 	this.controller.stageController.setWindowOrientation('free');
 
 	/* Determine the smallest and largest values in our dataset */
-	this.min = this.target;
+	this.min = this.p.target;
 	this.max = 0;
+
+	if (this.min == 0 && this.p.data.length) {
+		this.min = this.p.data[0].weight;
+	}
 
 	for (var i = 0; i < this.p.data.length; i++) {
 		this.min = Math.min(this.min, this.p.data[i].weight);
@@ -183,7 +175,7 @@ activate: function()
 	this.max = Math.max(this.max, this.min + 50);
 
 	/* The default view should make the most recent entry visible */
-	if (this.p.data.length) {
+	if (this.p.data.length && this.selected < this.p.data.length) {
 		this.scrollOffset = this.getX(this.p.data[this.selected].date) - (w * 0.7);
 	}
 
@@ -281,12 +273,11 @@ handleCommand: function(event)
 			break;
 
 		case 'newrecord':
-			this.controller.stageController.pushScene('enterweight');
+			this.controller.stageController.pushScene('enterweight', this.p, NaN);
 			break;
 
 		case 'editrecord':
-			// TODO Push info about the record to edit
-			this.controller.stageController.pushScene('enterweight');
+			this.controller.stageController.pushScene('enterweight', this.p, this.selected);
 			break;
 
 		case 'today':
@@ -300,14 +291,20 @@ handleCommand: function(event)
 
 		case 'week':
 			this.setDayCount(9);
+			this.p.scale = 'week';
+			this.p.save();
 			break;
 
 		case 'month':
 			this.setDayCount(35);
+			this.p.scale = 'month';
+			this.p.save();
 			break;
 
 		case 'year':
 			this.setDayCount(356);
+			this.p.scale = 'year';
+			this.p.save();
 			break;
 
 		default:
@@ -453,9 +450,9 @@ render: function(full)
 
 
 	/* Draw the "Target" line */
-	this.drawHorizLine(this.getY(this.target), 'rgba(199, 121,  39, 1)');
-	this.showHint("TARGET (" + this.target + ")",
-		48, this.getY(this.target) - 2,
+	this.drawHorizLine(this.getY(this.p.target), 'rgba(199, 121,  39, 1)');
+	this.showHint("TARGET (" + this.p.target + ")",
+		48, this.getY(this.p.target) - 2,
 		'rgba(255, 255, 255, 1)',
 		'rgba(199, 121,  39, 1)');
 
@@ -505,7 +502,7 @@ render: function(full)
 		TODO: Make the projected lines fade as they get further away indicating
 		that the data is less accurate.
 	*/
-	if (this.p.data[this.p.data.length - 1].date <= enddate) {
+	if (this.p.data.length && this.p.data[this.p.data.length - 1].date <= enddate) {
 		var tardate = new Date(this.p.data[this.p.data.length - 1].date.getTime());
 
 		/* Add 30 days... */
@@ -727,7 +724,14 @@ getWeight: function(y)
 /* Return the X offset on the graph based on a specific date */
 getX: function(date)
 {
-	var start		= this.p.data[0].date.getTime();
+	var start;
+
+	if (this.p.data.length) {
+		start = this.p.data[0].date.getTime();
+	} else {
+		start = (new Date()).getTime();
+	}
+
 	var end			= date.getTime();
 	var w			= parseInt(this.controller.window.innerWidth);
 	var daywidth	= (w / this.daycount);
@@ -747,7 +751,11 @@ getDate: function(x)
 {
 	var ms			= ((x - 32) / this.daywidth) * (86400000);
 
-	return(new Date(this.p.data[0].date.getTime() + ms));
+	if (this.p.data.length) {
+		return(new Date(this.p.data[0].date.getTime() + ms));
+	} else {
+		return(new Date((new Date()).getTime() + ms));
+	}
 },
 
 /*

@@ -15,6 +15,12 @@
 */
 var EnterweightAssistant = Class.create({
 
+initialize: function(prefs, selected)
+{
+	this.p			= prefs;
+	this.selected	= selected;
+},
+
 setup: function()
 {
     $$('.translate').each(function(e) { e.update($L(e.innerHTML)); });
@@ -24,6 +30,10 @@ setup: function()
 	}
 
 	this.weight = "";
+	if (!isNaN(this.selected) && this.selected < this.p.data.length) {
+		this.weight += this.p.data[this.selected].weight;
+	}
+
 	this.controller.setupWidget('weight', {
 		modelProperty:		'weight',
 		autoFocus:			true,
@@ -47,13 +57,22 @@ setup: function()
 	}, this);
 
 	this.comment = "";
+	if (!isNaN(this.selected) && this.selected < this.p.data.length) {
+		this.comment = this.p.data[this.selected].comment;
+	}
 	this.controller.setupWidget('comment', {
 		modelProperty:		'comment',
 		multiline:			true,
 		hintText:			$L('Comment...')
 	}, this);
 
-	this.savedisabled = true;
+	if (isNaN(this.selected) || this.selected >= this.p.data.length) {
+		this.controller.get('delete').style.display = 'none';
+		this.savedisabled = false;
+	} else {
+		this.savedisabled = true;
+	}
+
 	this.controller.setupWidget('save', {
 		label:				$L('Save'),
 		disabledProperty:	'savedisabled'
@@ -67,18 +86,18 @@ setup: function()
 		label:				$L('Delete')
 	}, {});
 
-	// TODO: Don't disable the delete button if editting an existing value
-	if (true) {
-		this.controller.get('delete').style.display = 'none';
-	}
-
 	this.controller.listen('save',		Mojo.Event.tap, this.save.bind(this));
 	this.controller.listen('cancel',	Mojo.Event.tap, this.cancel.bind(this));
 	this.controller.listen('delete',	Mojo.Event.tap, this.del.bind(this));
 
 	this.controller.listen('weight',	Mojo.Event.propertyChange, this.change.bind(this));
 
-	this.date = new Date();
+	if (!isNaN(this.selected) && this.selected < this.p.data.length) {
+		this.date = this.p.data[this.selected].date;
+	} else {
+		this.date = new Date();
+	}
+
 	this.controller.setupWidget('date', {
 		label:				$L('Date'),
 		modelProperty:		'date'
@@ -126,6 +145,10 @@ change: function()
 
 save: function()
 {
+	if (!isNaN(this.selected) && this.selected < this.p.data.length) {
+		this.p.data.splice(this.selected, 1);
+	}
+
 	for (var i = 0; i < this.p.data.length; i++) {
 		if (this.p.data[i].date > this.date) {
 			break;
@@ -138,7 +161,6 @@ save: function()
 		comment:	this.comment
 	});
 	this.p.save();
-
 	this.controller.stageController.popScene();
 },
 
@@ -147,7 +169,10 @@ cancel: function() {
 },
 
 del: function() {
-	// TODO: WRITEME
+	if (!isNaN(this.selected) && this.selected < this.p.data.length) {
+		this.p.data.splice(this.selected, 1);
+		this.p.save();
+	}
 	this.controller.stageController.popScene();
 },
 
