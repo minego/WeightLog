@@ -58,7 +58,8 @@ Preferences.prototype.load = function()
 		this.target	= prefs['target'];
 	}
 
-	this.unit		= prefs['unit']		|| this.unit;
+	this.units		= prefs['units']	|| this.units;
+	this.scale		= prefs['scale']	|| this.scale;
 };
 
 Preferences.prototype.dump = function()
@@ -66,6 +67,7 @@ Preferences.prototype.dump = function()
 	return({
 		'height':	this.height,
 		'unit':		this.unit,
+		'scale':	this.scale,
 
 		'data':		this.data,
 		'target':	this.target
@@ -79,8 +81,9 @@ Preferences.prototype.save = function()
 
 Preferences.prototype.reset = function()
 {
-	this.height		= NaN;
-	this.unit		= 'lb';
+	this.height		= (5 * 12) + 6;
+	this.units		= 'US';
+	this.scale		= 'week';
 
 	this.data		= [];
 	this.target		= [];

@@ -23,9 +23,9 @@ AppAssistant.prototype.handleCommand = function(event)
 
 AppAssistant.prototype.handleLaunch = function(params)
 {
-	this.controller.createStageWithCallback('chart',
+	this.controller.createStageWithCallback('launch',
 		function(stageController) {
-			stageController.pushScene('chart');
+			stageController.pushScene('launch');
 		}
 	);
 };

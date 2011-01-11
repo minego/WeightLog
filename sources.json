@@ -1,6 +1,7 @@
 [
-	{ 							"source": "app/assistants/app-assistant.js"			},
-	{ "scenes": "chart",		"source": "app/assistants/chart-assistant.js"		},
-	{							"source": "app/model/Preferences.js"				}
+	{ 						"source": "app/assistants/app-assistant.js"		},
+	{ "scenes": "chart",	"source": "app/assistants/chart-assistant.js"	},
+	{ "scenes": "launch",	"source": "app/assistants/launch-assistant.js"	},
+	{						"source": "app/model/Preferences.js"			}
 ]
 
