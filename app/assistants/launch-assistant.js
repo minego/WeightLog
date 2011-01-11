@@ -20,6 +20,8 @@ setup: function()
 {
     $$('.translate').each(function(e) { e.update($L(e.innerHTML)); });
 
+	this.controller.stageController.setWindowOrientation('up');
+
 	if (!this.p) {
 		this.p = new Preferences('weightlog');
 	}
@@ -90,6 +92,11 @@ ready: function()
 
 cleanup: function()
 {
+},
+
+activate: function()
+{
+	this.controller.stageController.setWindowOrientation('up');
 },
 
 deactivate: function()
