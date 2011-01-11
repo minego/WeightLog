@@ -95,7 +95,7 @@ cleanup: function()
 	this.controller.stopListening('cancel',	Mojo.Event.tap, this.cancel.bind(this));
 	this.controller.stopListening('delete',	Mojo.Event.tap, this.del.bind(this));
 
-	this.controller.StopListening('weight',	Mojo.Event.propertyChange, this.change.bind(this));
+	this.controller.stopListening('weight',	Mojo.Event.propertyChange, this.change.bind(this));
 },
 
 change: function()
@@ -126,8 +126,18 @@ change: function()
 
 save: function()
 {
-	// TODO Read the number, date and comment... add a new record to
-	//		this.p.data (sorted by date) and call this.p.save()
+	for (var i = 0; i < this.p.data.length; i++) {
+		if (this.p.data[i].date > this.date) {
+			break;
+		}
+	}
+
+	this.p.data.splice(i, 0, {
+		weight:		(this.weight * 1),
+		date:		this.date,
+		comment:	this.comment
+	});
+	this.p.save();
 
 	this.controller.stageController.popScene();
 },
