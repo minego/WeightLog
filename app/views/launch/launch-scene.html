@@ -1,14 +1,13 @@
-<!--
-	TODO: Show a big LED style number (like a digital scale or something) with
-	the user's last entered weight (or zeros if this is the first launch).
+<div style="
+	width:			230px;
+	height:			82px;
+	margin-top:		20px;
 
-	TODO: Show a "Enter Weight" button.  Should the button show a dropdown?  Or
-	a number pad???  The dropdown would be nice for daily updates but not for
-	the first launch....  2 drop downs?
--->
-
-<div style="width: 100%; height: 150px;">
-	<canvas id="led" width="280" height="150"></canvas>
+	position:		relative;
+	left:			50%;
+	margin-left:	-115px;
+">
+	<canvas id="led" width="152" height="82"></canvas>
 </div>
 
 <div x-mojo-element="Button" id="enterweight"></div>

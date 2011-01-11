@@ -14,13 +14,30 @@
 	ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+/*
+	TODO: When the 'Enter Weight' button is pressed (or the + in the chart)
+		  pop up a dialog (not a full scene) with an "IntegerPicker" for each
+		  digit of the weight...  It should also have a date and time picker
+		  (defaulting to now) and a "note" field.
+
+		  When saving make sure that the values are sorted.  If the time on a
+		  new field is in the past then it needs to be inserted in the right
+		  spot.
+
+		  What should the dialog look like?  Perhaps the LED number can be moved
+		  into a model, and then a number pad can be displayed.  This dialog
+		  would also need to handle keystrokes...
+
+	TODO: When the user edits a selected entry popup the same dialog with the
+		  values filled out.  If saved then overwrite the previous values.  It
+		  must have a cancel and delete button as well.
+*/
+
 var LaunchAssistant = Class.create({
 
 setup: function()
 {
     $$('.translate').each(function(e) { e.update($L(e.innerHTML)); });
-
-	this.controller.stageController.setWindowOrientation('up');
 
 	if (!this.p) {
 		this.p = new Preferences('weightlog');
@@ -65,25 +82,20 @@ setup: function()
 	}, {
 		buttonLabel:	$L('Enter Weight'),
 		buttonClass:	'primary'
-	}, this);
+	});
+	this.controller.listen(this.controller.get('enterweight'), Mojo.Event.tap,
+		this.enterWeight.bindAsEventListener(this));
 
 	this.controller.setupWidget('viewchart', {
 		type:			Mojo.Widget.button
 	}, {
 		buttonLabel:	$L('View History'),
 		buttonClass:	'primary'
-	}, this);
-
-
+	});
 	this.controller.listen(this.controller.get('viewchart'), Mojo.Event.tap,
 		this.viewChart.bindAsEventListener(this));
 
-	if (this.p.data && this.p.data.length) {
-		this.renderLED(this.p.data[this.p.data.length - 1].weight);
-	} else {
-		// this.renderLED(0);
-		this.renderLED(243.5);
-	}
+	this.activate();
 },
 
 ready: function()
@@ -96,7 +108,18 @@ cleanup: function()
 
 activate: function()
 {
+	if (this.p) {
+		this.p.load();
+	}
 	this.controller.stageController.setWindowOrientation('up');
+
+	if (this.p.data && this.p.data.length) {
+		this.lastweight = this.p.data[this.p.data.length - 1].weight;
+	} else {
+		this.lastweight = 0;
+	}
+
+	this.renderLED(this.lastweight);
 },
 
 deactivate: function()
@@ -107,6 +130,11 @@ deactivate: function()
 viewChart: function()
 {
 	this.controller.stageController.pushScene('chart');
+},
+
+enterWeight: function()
+{
+	this.controller.stageController.pushScene('enterweight');
 },
 
 horizLine: function(ctx, x, y, l)
@@ -143,7 +171,7 @@ drawDigit: function(ctx, digit, pos, decimal)
 {
 	var s	= 35;
 	var x	= 3;
-	var l	= (pos * s) + (pos * 25);
+	var l	= 6 + (pos * s) + (pos * 25);
 	var on	= 'rgba( 79, 121, 159, 1)';
 	var off	= 'rgba( 70,  70,  70, 1)';
 
@@ -156,10 +184,10 @@ drawDigit: function(ctx, digit, pos, decimal)
 
 		ctx.beginPath();
 
-		ctx.moveTo(l - (s / 2) - 4,	(s * 3));
-		ctx.lineTo(l - (s / 2),		(s * 3) - 4);
-		ctx.lineTo(l - (s / 2) + 4,	(s * 3));
-		ctx.lineTo(l - (s / 2),		(s * 3) + 4);
+		ctx.moveTo(l - (s / 2) - 4,	6 + (s * 2));
+		ctx.lineTo(l - (s / 2),		6 + (s * 2) - 4);
+		ctx.lineTo(l - (s / 2) + 4,	6 + (s * 2));
+		ctx.lineTo(l - (s / 2),		6 + (s * 2) + 4);
 
 		ctx.fill();
 	}
@@ -174,7 +202,7 @@ drawDigit: function(ctx, digit, pos, decimal)
 			ctx.fillStyle = off;
 			break;
 	}
-	this.vertLine(ctx, l, s, s);
+	this.vertLine(ctx, l, 6, s);
 
 	switch (digit) {
 		case 0: case 2: case 6: case 8:
@@ -185,7 +213,7 @@ drawDigit: function(ctx, digit, pos, decimal)
 			ctx.fillStyle = off;
 			break;
 	}
-	this.vertLine(ctx, l, s * 2, s);
+	this.vertLine(ctx, l, 6 + s, s);
 
 	/* Right line */
 	switch (digit) {
@@ -197,7 +225,7 @@ drawDigit: function(ctx, digit, pos, decimal)
 			ctx.fillStyle = off;
 			break;
 	}
-	this.vertLine(ctx, l + s, s, s);
+	this.vertLine(ctx, l + s, 6, s);
 
 	switch (digit) {
 		case 0: case 1: case 3: case 4: case 5: case 6: case 7: case 8: case 9:
@@ -208,7 +236,7 @@ drawDigit: function(ctx, digit, pos, decimal)
 			ctx.fillStyle = off;
 			break;
 	}
-	this.vertLine(ctx, l + s, s * 2, s);
+	this.vertLine(ctx, l + s, 6 + s, s);
 
 	/* Horizontal lines */
 	switch (digit) {
@@ -220,7 +248,7 @@ drawDigit: function(ctx, digit, pos, decimal)
 			ctx.fillStyle = off;
 			break;
 	}
-	this.horizLine(ctx, l, s, s);
+	this.horizLine(ctx, l, 6, s);
 
 	switch (digit) {
 		case 2: case 3: case 4: case 5: case 6: case 8: case 9:
@@ -231,7 +259,7 @@ drawDigit: function(ctx, digit, pos, decimal)
 			ctx.fillStyle = off;
 			break;
 	}
-	this.horizLine(ctx, l, s * 2, s);
+	this.horizLine(ctx, l, 6 + s, s);
 
 	switch (digit) {
 		case 0: case 2: case 3: case 5: case 6: case 8: case 9:
@@ -242,7 +270,7 @@ drawDigit: function(ctx, digit, pos, decimal)
 			ctx.fillStyle = off;
 			break;
 	}
-	this.horizLine(ctx, l, s * 3, s);
+	this.horizLine(ctx, l, 6 + (s * 2), s);
 
 	ctx.restore();
 },
@@ -250,8 +278,8 @@ drawDigit: function(ctx, digit, pos, decimal)
 renderLED: function(weight)
 {
 	var led		= this.controller.get('led');
-	var w		= 280;
-	var h		= 150;
+	var w		= 230;
+	var h		= 82;
 
 	led.width	= w; led.style.width	= w + "px";
 	led.height	= h; led.style.height	= h + "px";
@@ -260,10 +288,10 @@ renderLED: function(weight)
 
 	ctx.clearRect(0, 0, w, h);
 
-	this.drawDigit(ctx, Math.floor(weight / 100), 1); weight = weight % 100;
-	this.drawDigit(ctx, Math.floor(weight / 10 ), 2); weight = weight % 10;
-	this.drawDigit(ctx, Math.floor(weight      ), 3); weight -= Math.floor(weight);
-	this.drawDigit(ctx, Math.floor(weight * 10 ), 4, true);
+	this.drawDigit(ctx, Math.floor(weight / 100), 0); weight = weight % 100;
+	this.drawDigit(ctx, Math.floor(weight / 10 ), 1); weight = weight % 10;
+	this.drawDigit(ctx, Math.floor(weight      ), 2); weight -= Math.floor(weight);
+	this.drawDigit(ctx, Math.floor(weight * 10 ), 3, true);
 },
 
 handleCommand: function(event)

@@ -202,6 +202,9 @@ ready: function()
 
 activate: function()
 {
+	if (this.p) {
+		this.p.load();
+	}
 	this.controller.stageController.setWindowOrientation('free');
 },
 
