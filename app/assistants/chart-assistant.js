@@ -20,6 +20,8 @@
 	TODO: Remeber the time scale the user last selected and default to that on
 		  the next launch.
 
+	TODO: Support units other than pound...
+
 	TODO: Make sure that the buttons don't hide data.
 
 	TODO: Make the scrolling support inertia (kinda done... not happy with it)
@@ -40,6 +42,10 @@ var ChartAssistant = Class.create({
 setup: function()
 {
 	var w = parseInt(this.controller.window.innerWidth);
+
+	if (!this.p) {
+		this.p = new Preferences('weightlog');
+	}
 
 	this.controller.stageController.setWindowOrientation('free');
 

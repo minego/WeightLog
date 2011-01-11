@@ -1,5 +1,6 @@
 [
 	{ 							"source": "app/assistants/app-assistant.js"			},
-	{ "scenes": "chart",		"source": "app/assistants/chart-assistant.js"		}
+	{ "scenes": "chart",		"source": "app/assistants/chart-assistant.js"		},
+	{							"source": "app/model/Preferences.js"				}
 ]
 
