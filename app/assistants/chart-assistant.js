@@ -200,6 +200,11 @@ ready: function()
 	this.screenSizeChanged();
 },
 
+activate: function()
+{
+	this.controller.stageController.setWindowOrientation('free');
+},
+
 cleanup: function()
 {
 	this.controller.stopListening(document, 'resize',
@@ -302,6 +307,10 @@ handleCommand: function(event)
 		case 'newrecord':
 			// TODO Create a new record dialog (This should be a dialog, not
 			//		a page...
+			this.controller.stageController.pushScene('newrecord');
+			break;
+
+		case 'back':
 			this.controller.stageController.popScene();
 			break;
 
