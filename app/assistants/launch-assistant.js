@@ -314,6 +314,13 @@ handleCommand: function(event)
 	// TODO Setup the menu.  Right now none of these events will be called
 	//		because the default menu is in place
 	switch (cmd) {
+		case 'reset':
+			this.p.reset();
+			this.p.save();
+
+			this.renderLED(0);
+			break;
+
 		case Mojo.Menu.prefsCmd:
 			// TODO Create a prefs page
 			this.controller.stageController.pushScene('prefs');

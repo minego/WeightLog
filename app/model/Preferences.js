@@ -52,10 +52,18 @@ Preferences.prototype.load = function()
 
 	if (prefs['data'] != undefined) {
 		this.data	= prefs['data'];
+
+		for (var i = 0; i < this.data.length; i++) {
+			this.data[i].date = new Date(this.data[i].date);
+		}
 	}
 
 	if (prefs['target'] != undefined) {
 		this.target	= prefs['target'];
+
+		for (var i = 0; i < this.target.length; i++) {
+			this.target[i].date = new Date(this.target[i].date);
+		}
 	}
 
 	this.units		= prefs['units']	|| this.units;
@@ -64,14 +72,23 @@ Preferences.prototype.load = function()
 
 Preferences.prototype.dump = function()
 {
-	return({
+	var dump = {
 		'height':	this.height,
 		'unit':		this.unit,
 		'scale':	this.scale,
 
 		'data':		this.data,
 		'target':	this.target
-	});
+	};
+
+	for (var i = 0; i < dump.data.length; i++) {
+		dump.data[i].date = dump.data[i].date.getTime();
+	}
+	for (var i = 0; i < dump.target.length; i++) {
+		dump.target[i].date = dump.target[i].date.getTime();
+	}
+
+	return(dump);
 };
 
 Preferences.prototype.save = function()
@@ -81,9 +98,9 @@ Preferences.prototype.save = function()
 
 Preferences.prototype.reset = function()
 {
-	this.height		= (5 * 12) + 6;
-	this.units		= 'US';
-	this.scale		= 'week';
+	this.height		= this.height || (5 * 12) + 6;
+	this.units		= this.height || 'US';
+	this.scale		= this.height || 'week';
 
 	this.data		= [];
 	this.target		= [];

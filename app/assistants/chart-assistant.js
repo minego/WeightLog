@@ -17,17 +17,7 @@
 /*
 	TODO: Should year be hidden??
 
-	TODO: Remeber the time scale the user last selected and default to that on
-		  the next launch.
-
 	TODO: Support units other than pound...
-
-	TODO: Make sure that the buttons don't hide data.
-
-	TODO: Make the scrolling support inertia (kinda done... not happy with it)
-
-	TODO: When the user adds a record allow adding a note along with it, and
-		  display that when they tap on that record.
 
 	TODO: Allow changing the target weight, and record that in the same way that
 		  the user's weight is recorded.  But for each new record save one with
@@ -113,7 +103,7 @@ setup: function()
 					icon:			'new'
 				},
 				{
-					toggleCmd:		'week',
+					toggleCmd:		this.p.scale || 'week',
 					items:
 					[
 						{
@@ -132,17 +122,10 @@ setup: function()
 		}
 	);
 
-
-	/* Load the user's data and preferences, and setup the chart */
-	// TODO Load the user's saved data and preferences (height and target
-	//		weight) from preferences
-	this.data			= [];
 	this.min			= 0;
 	this.max			= 0;
 
-	/* The user's height in inches */
-	this.height			= 71;
-
+	// TODO: Load the 'target' data from preferences
 	/* The user's target weight */
 	this.target			= 183;
 
@@ -151,28 +134,29 @@ setup: function()
 	this.bottomMargin	= 50;
 
 	/* The number of days to display.  Adjusting this will scale the chart. */
-	this.daycount		= 9;
-	this.daywidth		= (w / this.daycount);
+	switch (this.p.scale) {
+		default:
+		case 'week':
+			this.daycount		= 9;
+			break;
 
+		case 'month':
+			this.daycount		= 35;
+			break;
 
-	// TODO Load real data instead of this fake data
-	/* Assign some random data */
-	var d = new Date(2011, 4, 27, 0, 0, 0, 0);
-	for (var i = 0; i < 35; i++) {
-		d.setHours(d.getHours() + 24 + Math.floor(Math.random() * 32));
-		this.data[this.data.length] = {
-			'weight':	(300 - (i / 4)) + (Math.random() * 7),
-			'date':		new Date(d.getTime())
-		};
+		case 'year':
+			this.daycount		= 356;
+			break;
 	}
 
+	// TODO: Much of this probably needs to be done on activation...
 	/* Determine the smallest and largest values in our dataset */
 	this.min = this.target;
 	this.max = 0;
 
-	for (var i = 0; i < this.data.length; i++) {
-		this.min = Math.min(this.min, this.data[i].weight);
-		this.max = Math.max(this.max, this.data[i].weight);
+	for (var i = 0; i < this.p.data.length; i++) {
+		this.min = Math.min(this.min, this.p.data[i].weight);
+		this.max = Math.max(this.max, this.p.data[i].weight);
 	}
 
 	/* Pad a bid */
@@ -183,13 +167,12 @@ setup: function()
 	this.max = Math.max(this.max, this.min + 50);
 
 	/* The selected item defaults to the last one */
-	this.selected		= this.data.length - 1;
+	this.selected		= this.p.data.length - 1;
 
 	/* The default view should make the most recent entry visible */
-	if (this.data.length) {
-		this.scrollOffset = this.getX(this.data[this.selected].date) - (w * 0.7);
+	if (this.p.data.length) {
+		this.scrollOffset = this.getX(this.p.data[this.selected].date) - (w * 0.7);
 	}
-
 
 	/* This will be filled out during render() */
 	this.ctx			= null;
@@ -420,22 +403,23 @@ render: function(full)
 
 
 		var i = ((this.max - this.min) / (13 - 3));
-		i = i - (i % 10);
+		i = Math.floor(i / 10) * 10;
+		if (i < 10) i = 10;
 
-		var y = this.getWeight(0);
+		var y = Math.floor(this.getWeight(0));
 		y = y - (y % i) + i;
 
 		for (;; y += 10) {
 			var yo = this.getY(y);
 
-			if ((yo - 7) <= -(h - 16)) {
+			if (isNaN(yo) || (yo - 7) <= -(h - 16)) {
 				break;
 			}
 
 			/* Draw a label */
 			if (0 == (y % i)) {
 				c.fillText("" + y, 16, yo + 5);
-				c.fillText(this.NumToStr(this.LBtoBMI(y, this.height)),
+				c.fillText(this.NumToStr(this.LBtoBMI(y, this.p.height)),
 					w - 16, yo + 5);
 			}
 
@@ -496,24 +480,24 @@ render: function(full)
 	var enddate		= this.getDate(this.scrollOffset + w);
 	var i;
 
-	for (i = 1; i < this.data.length; i++) {
-		if (this.data[i].date >= startdate) {
+	for (i = 1; i < this.p.data.length; i++) {
+		if (this.p.data[i].date >= startdate) {
 			i--;
 			break;
 		}
 	}
 
-	if (i < this.data.length) {
+	if (i < this.p.data.length) {
 		this.ctx.beginPath();
-		this.ctx.moveTo(this.getX(this.data[i].date),
-						this.getY(this.data[i].weight));
+		this.ctx.moveTo(this.getX(this.p.data[i].date),
+						this.getY(this.p.data[i].weight));
 		i++;
 
-		for (; i < this.data.length; i++) {
-			this.ctx.lineTo(this.getX(this.data[i].date),
-							this.getY(this.data[i].weight));
+		for (; i < this.p.data.length; i++) {
+			this.ctx.lineTo(this.getX(this.p.data[i].date),
+							this.getY(this.p.data[i].weight));
 
-			if (this.data[i].date >= enddate) {
+			if (this.p.data[i].date >= enddate) {
 				break;
 			}
 		}
@@ -529,33 +513,33 @@ render: function(full)
 		TODO: Make the projected lines fade as they get further away indicating
 		that the data is less accurate.
 	*/
-	if (this.data[this.data.length - 1].date <= enddate) {
-		var tardate = new Date(this.data[this.data.length - 1].date.getTime());
+	if (this.p.data[this.p.data.length - 1].date <= enddate) {
+		var tardate = new Date(this.p.data[this.p.data.length - 1].date.getTime());
 
 		/* Add 30 days... */
 		tardate.setDate(tardate.getDate() + 30);
 		this.ctx.strokeStyle = 'rgba( 79, 121, 159, 0.3)';
 
 		this.ctx.beginPath();
-		this.ctx.moveTo(this.getX(this.data[this.data.length - 1].date),
-						this.getY(this.data[i - 1].weight));
+		this.ctx.moveTo(this.getX(this.p.data[this.p.data.length - 1].date),
+						this.getY(this.p.data[i - 1].weight));
 
 		this.ctx.lineTo(this.getX(tardate),
-						this.getY(this.data[i - 1].weight - 20));
+						this.getY(this.p.data[i - 1].weight - 20));
 		this.ctx.stroke();
 	}
 
 	/* Draw a "dot" on each point */
-	for (var i = 0; i < this.data.length; i++) {
-		if (this.data[i].date < startdate ||
-			this.data[i].date > enddate
+	for (var i = 0; i < this.p.data.length; i++) {
+		if (this.p.data[i].date < startdate ||
+			this.p.data[i].date > enddate
 		) {
 			continue;
 		}
 
 		this.ctx.beginPath();
-		this.ctx.arc(	this.getX(this.data[i].date),
-						this.getY(this.data[i].weight),
+		this.ctx.arc(	this.getX(this.p.data[i].date),
+						this.getY(this.p.data[i].weight),
 						4, 0, 360, true);
 		this.ctx.fill();
 	}
@@ -566,14 +550,14 @@ render: function(full)
 	this.ctx.restore();
 
 
-	if (this.selected >= 0 && this.selected < this.data.length) {
+	if (this.selected >= 0 && this.selected < this.p.data.length) {
 		this.showHint("" +
-			this.data[this.selected].date.getMonth()		+ "/" +
-			this.data[this.selected].date.getDate()			+ " (" +
-			this.NumToStr(this.data[this.selected].weight)	+ ")",
+			this.p.data[this.selected].date.getMonth()			+ "/" +
+			this.p.data[this.selected].date.getDate()			+ " (" +
+			this.NumToStr(this.p.data[this.selected].weight)	+ ")",
 
-			this.getX(this.data[this.selected].date),
-			this.getY(this.data[this.selected].weight) - 3,
+			this.getX(this.p.data[this.selected].date),
+			this.getY(this.p.data[this.selected].weight) - 3,
 
 			'rgba(255, 255, 255, 1)',
 			'rgba( 79, 121, 159, 1)', false);
@@ -581,7 +565,7 @@ render: function(full)
 
 
 	/*
-		Draw the vertical scales (on top of everything else)
+		Draw the date labels
 
 		Keep in mind that the origin is still in the bottom left.
 	*/
@@ -619,7 +603,7 @@ render: function(full)
 			x, -(h - 17));
 
 		d.setDate(d.getDate() + i);
-		if (x > w) break;
+		if (isNaN(x) || x > w) break;
 	}
 
 	this.ctx.restore();
@@ -671,20 +655,20 @@ tap: function(event)
 	var d	= this.getDate(this.scrollOffset + x);
 
 	/* Find the data point that is closest to where the user clicked */
-	for (var i = 0; i < this.data.length; i++) {
-		if (this.data[i].date > d) {
+	for (var i = 0; i < this.p.data.length; i++) {
+		if (this.p.data[i].date > d) {
 			break;
 		}
 	}
 
 	this.selected = i;
-	if (i < this.data.length && i > 0) {
+	if (i < this.p.data.length && i > 0) {
 		/*
 			The user clicked between data[i - 1] and data[i], but which is one
 			is the closest to the click?
 		*/
-		var a = d.getTime() - this.data[i - 1].date.getTime();
-		var b = this.data[i].date.getTime() - d.getTime();
+		var a = d.getTime() - this.p.data[i - 1].date.getTime();
+		var b = this.p.data[i].date.getTime() - d.getTime();
 
 		if (a < b) {
 			this.selected--;
@@ -751,13 +735,14 @@ getWeight: function(y)
 /* Return the X offset on the graph based on a specific date */
 getX: function(date)
 {
-	var start		= this.data[0].date.getTime();
+	var start		= this.p.data[0].date.getTime();
 	var end			= date.getTime();
-
+	var w			= parseInt(this.controller.window.innerWidth);
+	var daywidth	= (w / this.daycount);
 	var days		= (end - start) / (86400000);
 
 	/* Pad the first point by 32 for the weight labels */
-	return((32 + (days * this.daywidth)) - this.scrollOffset);
+	return((32 + (days * daywidth)) - this.scrollOffset);
 },
 
 /*
@@ -770,7 +755,7 @@ getDate: function(x)
 {
 	var ms			= ((x - 32) / this.daywidth) * (86400000);
 
-	return(new Date(this.data[0].date.getTime() + ms));
+	return(new Date(this.p.data[0].date.getTime() + ms));
 },
 
 /*
