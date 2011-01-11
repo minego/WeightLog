@@ -167,7 +167,7 @@ vertLine: function(ctx, x, y, l)
 	ctx.fill();
 },
 
-drawDigit: function(ctx, digit, pos, decimal)
+drawDigit: function(ctx, pos, digit, decimal)
 {
 	var s	= 35;
 	var x	= 3;
@@ -288,10 +288,10 @@ renderLED: function(weight)
 
 	ctx.clearRect(0, 0, w, h);
 
-	this.drawDigit(ctx, Math.floor(weight / 100), 0); weight = weight % 100;
-	this.drawDigit(ctx, Math.floor(weight / 10 ), 1); weight = weight % 10;
-	this.drawDigit(ctx, Math.floor(weight      ), 2); weight -= Math.floor(weight);
-	this.drawDigit(ctx, Math.floor(weight * 10 ), 3, true);
+	this.drawDigit(ctx, 0, Math.floor(weight / 100));
+	this.drawDigit(ctx, 1, Math.floor((weight % 100) / 10));
+	this.drawDigit(ctx, 2, Math.floor(weight % 10));
+	this.drawDigit(ctx, 3, Math.floor((weight * 10) % 10), true);
 },
 
 handleCommand: function(event)
