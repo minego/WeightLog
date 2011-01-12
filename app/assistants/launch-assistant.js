@@ -109,17 +109,56 @@ setup: function()
 	this.controller.listen(this.controller.get('viewchart'), Mojo.Event.tap,
 		this.viewChart.bindAsEventListener(this));
 
-
-
 	this.controller.listen('target',	Mojo.Event.propertyChange, this.change.bind(this));
 	this.controller.listen('height',	Mojo.Event.propertyChange, this.change.bind(this));
 	this.controller.listen('units',		Mojo.Event.propertyChange, this.change.bind(this));
+
 
 	this.activate();
 },
 
 ready: function()
 {
+
+if (false) {
+	Mojo.log('Making remote test call');
+
+	xmlrpc('http://www.skinnyr.com/api2', 'getAuthToken', [
+		'minego',
+		'7c396319a7c2bc96e1779114de810e23',
+		'Weight Log Test',
+		'www.minego.net'
+	], function(ret) {
+		Mojo.log('Success: ' + Object.toJSON(ret));
+	}, function(err) {
+		Mojo.log('Error: ' + ret);
+	}, function() {
+		Mojo.log('Done');
+	});
+
+	xmlrpc('http://www.skinnyr.com/api2', 'existsByUsername', [
+		'minego'
+	], function(ret) {
+		Mojo.log('Success: ' + Object.toJSON(ret));
+	}, function(err) {
+		Mojo.log('Error: ' + ret);
+	}, function() {
+		Mojo.log('Done');
+	});
+
+
+	xmlrpc('http://www.skinnyr.com/api2', 'existsByUsername', [
+		'thisisnotminego'
+	], function(ret) {
+		Mojo.log('Success: ' + Object.toJSON(ret));
+	}, function(err) {
+		Mojo.log('Error: ' + ret);
+	}, function() {
+		Mojo.log('Done');
+	});
+}
+
+
 },
 
 cleanup: function()
