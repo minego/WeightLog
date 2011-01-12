@@ -3,6 +3,7 @@
 	{ "scenes": "chart",		"source": "app/assistants/chart-assistant.js"		},
 	{ "scenes": "launch",		"source": "app/assistants/launch-assistant.js"		},
 	{ "scenes": "enterweight",	"source": "app/assistants/enterweight-assistant.js"	},
-	{							"source": "app/model/Preferences.js"				}
+	{							"source": "app/model/Preferences.js"				},
+	{							"source": "app/model/xmlrpc.js"						}
 ]
 
