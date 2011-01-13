@@ -19,6 +19,11 @@ var LaunchAssistant = Class.create({
 // TODO	The target weight needs to be stored in metric and converted on the fly
 //		to the correct unit for display...
 
+// TODO	Height needs to be stored in metric and the list needs to be updated
+//		based on the unit selected
+
+// TODO Test the skinnyr integration
+
 setup: function()
 {
     $$('.translate').each(function(e) { e.update($L(e.innerHTML)); });
@@ -72,41 +77,25 @@ setup: function()
 		]
 	}, this.p);
 
-
-	this.weight = "";
-	this.controller.setupWidget('weight', {
-		modelProperty:		'weight',
-		autoFocus:			true,
-		modifierState:		Mojo.Widget.numLock,
-		maxLength:			5,
-		changeOnKeyPress:	true,
-		label:				$L('Enter New Weight'),
-		hintText:			$L('Enter New Weight'),
-		charsAllow:			function(c)
-		{
-			/* Allow deleteKey for use with the emulator */
-			if (c == Mojo.Char.period || c == Mojo.Char.deleteKey) {
-				return(true);
-			}
-
-			if (c >= Mojo.Char.asciiZero && c <= Mojo.Char.asciiNine) {
-				return(true);
-			}
-
-			return(false);
-		}
-	}, this);
-
-	this.controller.listen('weight',	Mojo.Event.propertyChange, this.weightChange.bind(this));
-
-	this.buttonLabel = $L('View History');
-	this.controller.setupWidget('superbutton', {
-		type:			Mojo.Widget.activityButton,
+	this.controller.setupWidget('newweight', {
+		type:			Mojo.Widget.button,
 		buttonClass:	'primary'
-	}, this);
+	}, {
+		buttonLabel:	$L('Enter New Weight')
+	});
+	this.controller.listen(this.controller.get('newweight'), Mojo.Event.tap,
+		this.newweight.bindAsEventListener(this));
 
-	this.controller.listen(this.controller.get('superbutton'), Mojo.Event.tap,
-		this.superbutton.bindAsEventListener(this));
+
+	this.controller.setupWidget('history', {
+		type:			Mojo.Widget.button,
+		buttonClass:	'primary'
+	}, {
+		buttonLabel:	$L('View History')
+	});
+	this.controller.listen(this.controller.get('history'), Mojo.Event.tap,
+		this.history.bindAsEventListener(this));
+
 
 	this.target = "";
 	if (this.p.target > 0) {
@@ -120,7 +109,6 @@ setup: function()
 		maxLength:			5,
 		changeOnKeyPress:	false,
 		label:				$L('Target Weight'),
-		hintText:			$L('Enter Target Weight'),
 		charsAllow:			function(c)
 		{
 			/* Allow deleteKey for use with the emulator */
@@ -152,10 +140,9 @@ cleanup: function()
 	this.controller.stopListening('target',	Mojo.Event.propertyChange, this.change.bind(this));
 	this.controller.stopListening('height',	Mojo.Event.propertyChange, this.change.bind(this));
 	this.controller.stopListening('units',	Mojo.Event.propertyChange, this.change.bind(this));
-	this.controller.stopListening('weight',	Mojo.Event.propertyChange, this.weightChange.bind(this));
 
-	this.controller.stopListening(this.controller.get('superbutton'), Mojo.Event.tap,
-		this.superbutton.bindAsEventListener(this));
+	this.controller.stopListening(this.controller.get('history'), Mojo.Event.tap,
+		this.history.bindAsEventListener(this));
 },
 
 activate: function()
@@ -169,17 +156,6 @@ activate: function()
 	if (this.p.units) {
 		weights.setUnits(this.p.units);
 	}
-
-// TODO REMOVE ME: Testing code...
-if (false) {
-	var d = new Date();
-	d.setDate(d.getDate() + 5);
-
-	weights.add(243.1, d);
-	weights.sync(function() {
-		Mojo.log('Synced');
-	});
-}
 
 	if (weights.count()) {
 		this.lastweight = weights.w(weights.count() - 1);
@@ -199,41 +175,18 @@ change: function()
     this.p.save();
 },
 
-weightChange: function()
+history: function()
 {
-	var w = parseInt(this.weight);
-
-	if (!isNaN(w) && w > 0 && w <= 999) {
-		this.buttonLabel = $L('Save New Weight');
-	} else {
-		this.buttonLabel = $L('View History');
-	}
-
-	this.controller.modelChanged(this);
+	this.controller.stageController.pushScene('chart');
 },
 
-superbutton: function()
+newweight: function()
 {
-	var w = parseInt(this.weight);
-
-	if (!isNaN(w) && w > 0 && w <= 999) {
-		this.controller.get('superbutton').mojo.activate();
-
-		weights.add(w);
-		weights.sync(function(worked) {
-			// TODO Let the user know that the sync worked...
-			Mojo.log('Sync worked');
-
-			this.weight = "";
-			this.controller.get('superbutton').mojo.deactivate();
-
-			this.buttonLabel = $L('View History');
-			this.controller.modelChanged(this);
-		}.bind(this));
-	} else {
-		this.controller.get('superbutton').mojo.deactivate();
-		this.controller.stageController.pushScene('chart');
-	}
+	this.controller.showDialog({
+		template:		'newweight/newweight-dialog',
+		preventCancel:	false,
+		assistant:		new NewWeightDialog(this, this.p, NaN)
+	});
 },
 
 horizLine: function(ctx, x, y, l)
@@ -431,10 +384,15 @@ handleCommand: function(event)
 	// TODO: Setup the menu
 	switch (cmd) {
 		case 'reset':
-			this.p.reset();
-			this.p.save();
+			while (weights.count()) {
+				weights.del(0);
+			}
 
-			this.renderLED(0);
+			// TODO Let the user know that we're busy syncing...
+			weights.sync(function() {
+				// TODO Let the user know that we're done...
+				this.renderLED(0);
+			}.bind(this));
 			break;
 
 		case 'about':
