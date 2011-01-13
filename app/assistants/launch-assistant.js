@@ -16,9 +16,8 @@
 
 var LaunchAssistant = Class.create({
 
-// TODO	Move the LED number into it's own .js file and make it scale to the
-//		specified size.  Then consider displaying additional information with it
-//		like "average daily change" etc.
+// TODO	The target weight needs to be stored in metric and converted on the fly
+//		to the correct unit for display...
 
 setup: function()
 {
@@ -28,6 +27,15 @@ setup: function()
 		this.p = new Preferences('weightlog');
 	}
 
+	if (!weights.loaded) {
+		weights.load(this.p.authtoken, function() {
+			this.activate();
+		}.bind(this));
+	}
+
+	// TODO: Add a 'login' menu item
+	// TODO: Add a 'logout' menu item
+	// TODO: Add a 'refresh' menu item
 	this.controller.setupWidget(Mojo.Menu.appMenu,
 		{ omitDefaultItems: true },
 		this.menu = {
@@ -58,10 +66,47 @@ setup: function()
 		label:			$L('Units'),
 		modelProperty:	'units',
 		choices:		[
-			{ label: $L('U.S.'),	value: 'US'		},
-			{ label: $L('metric'),	value: 'metric'	}
+			{ label: $L('U.S. (lb and inches'),			value: 'US'			},
+			{ label: $L('Metric (kg and cm)'),			value: 'metric'		},
+			{ label: $L('Imperial (stone and inches)'),	value: 'imperial'	}
 		]
 	}, this.p);
+
+
+	this.weight = "";
+	this.controller.setupWidget('weight', {
+		modelProperty:		'weight',
+		autoFocus:			true,
+		modifierState:		Mojo.Widget.numLock,
+		maxLength:			5,
+		changeOnKeyPress:	false,
+		label:				$L('Enter New Weight'),
+		hintText:			$L('Enter New Weight'),
+		charsAllow:			function(c)
+		{
+			/* Allow deleteKey for use with the emulator */
+			if (c == Mojo.Char.period || c == Mojo.Char.deleteKey) {
+				return(true);
+			}
+
+			if (c >= Mojo.Char.asciiZero && c <= Mojo.Char.asciiNine) {
+				return(true);
+			}
+
+			return(false);
+		}
+	}, this);
+
+	this.controller.setupWidget('saveweight', {
+		type:			Mojo.Widget.button
+	}, {
+		buttonLabel:	$L('Save'),
+		buttonClass:	'primary'
+	});
+	this.controller.listen(this.controller.get('saveweight'), Mojo.Event.tap,
+		this.saveweight.bindAsEventListener(this));
+
+
 
 	this.target = "";
 	if (this.p.target > 0) {
@@ -91,15 +136,6 @@ setup: function()
 		}
 	}, this);
 
-	this.controller.setupWidget('enterweight', {
-		type:			Mojo.Widget.button
-	}, {
-		buttonLabel:	$L('Enter Weight'),
-		buttonClass:	'primary'
-	});
-	this.controller.listen(this.controller.get('enterweight'), Mojo.Event.tap,
-		this.enterWeight.bindAsEventListener(this));
-
 	this.controller.setupWidget('viewchart', {
 		type:			Mojo.Widget.button
 	}, {
@@ -113,52 +149,11 @@ setup: function()
 	this.controller.listen('height',	Mojo.Event.propertyChange, this.change.bind(this));
 	this.controller.listen('units',		Mojo.Event.propertyChange, this.change.bind(this));
 
-
 	this.activate();
 },
 
 ready: function()
 {
-
-if (false) {
-	Mojo.log('Making remote test call');
-
-	xmlrpc('http://www.skinnyr.com/api2', 'getAuthToken', [
-		'minego',
-		'7c396319a7c2bc96e1779114de810e23',
-		'Weight Log Test',
-		'www.minego.net'
-	], function(ret) {
-		Mojo.log('Success: ' + Object.toJSON(ret));
-	}, function(err) {
-		Mojo.log('Error: ' + ret);
-	}, function() {
-		Mojo.log('Done');
-	});
-
-	xmlrpc('http://www.skinnyr.com/api2', 'existsByUsername', [
-		'minego'
-	], function(ret) {
-		Mojo.log('Success: ' + Object.toJSON(ret));
-	}, function(err) {
-		Mojo.log('Error: ' + ret);
-	}, function() {
-		Mojo.log('Done');
-	});
-
-
-	xmlrpc('http://www.skinnyr.com/api2', 'existsByUsername', [
-		'thisisnotminego'
-	], function(ret) {
-		Mojo.log('Success: ' + Object.toJSON(ret));
-	}, function(err) {
-		Mojo.log('Error: ' + ret);
-	}, function() {
-		Mojo.log('Done');
-	});
-}
-
-
 },
 
 cleanup: function()
@@ -167,21 +162,37 @@ cleanup: function()
 	this.controller.stopListening('height',	Mojo.Event.propertyChange, this.change.bind(this));
 	this.controller.stopListening('units',	Mojo.Event.propertyChange, this.change.bind(this));
 
-	this.controller.stopListening(this.controller.get('enterweight'), Mojo.Event.tap,
-		this.enterWeight.bindAsEventListener(this));
+	this.controller.stopListening(this.controller.get('saveweight'), Mojo.Event.tap,
+		this.saveweight.bindAsEventListener(this));
 	this.controller.stopListening(this.controller.get('viewchart'), Mojo.Event.tap,
 		this.viewChart.bindAsEventListener(this));
 },
 
 activate: function()
 {
+	this.controller.stageController.setWindowOrientation('up');
+
 	if (this.p) {
 		this.p.load();
 	}
-	this.controller.stageController.setWindowOrientation('up');
 
-	if (this.p.data && this.p.data.length) {
-		this.lastweight = this.p.data[this.p.data.length - 1].weight;
+	if (this.p.units) {
+		weights.setUnits(this.p.units);
+	}
+
+// TODO REMOVE ME: Testing code...
+if (false) {
+	var d = new Date();
+	d.setDate(d.getDate() + 5);
+
+	weights.add(243.1, d);
+	weights.sync(function() {
+		Mojo.log('Synced');
+	});
+}
+
+	if (weights.count()) {
+		this.lastweight = weights.w(weights.count() - 1);
 	} else {
 		this.lastweight = 0;
 	}
@@ -203,9 +214,9 @@ viewChart: function()
 	this.controller.stageController.pushScene('chart');
 },
 
-enterWeight: function()
+saveweight: function()
 {
-	this.controller.stageController.pushScene('enterweight', this.p, NaN);
+	this.controller.stageController.pushScene('saveweight', this.p, NaN);
 },
 
 horizLine: function(ctx, x, y, l)

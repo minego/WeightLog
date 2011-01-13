@@ -77,7 +77,6 @@ setup: function()
 		}
 	);
 
-Mojo.log('this.p.scale: ' + this.p.scale);
 	this.controller.setupWidget(Mojo.Menu.commandMenu,
 		{
 			omitDefaultItems:		true,
@@ -118,6 +117,8 @@ Mojo.log('this.p.scale: ' + this.p.scale);
 	this.topMargin		= 45;
 	this.bottomMargin	= 50;
 
+	this.selected		= 0;
+
 	/* The number of days to display.  Adjusting this will scale the chart. */
 	switch (this.p.scale) {
 		default:
@@ -134,8 +135,18 @@ Mojo.log('this.p.scale: ' + this.p.scale);
 			break;
 	}
 
-	/* The selected item defaults to the last one */
-	this.selected		= this.p.data.length - 1;
+	/* Now we need data */
+	if (!weights.loaded) {
+		weights.load(this.p.authtoken, function() {
+			/* The selected item defaults to the last one */
+			this.selected = weights.count() - 1;
+
+			this.activate();
+		}.bind(this));
+	} else {
+		/* The selected item defaults to the last one */
+		this.selected = weights.count() - 1;
+	}
 
 	/* This will be filled out during render() */
 	this.ctx			= null;
@@ -149,22 +160,27 @@ activate: function()
 {
 	var w = parseInt(this.controller.window.innerWidth);
 
+	this.controller.stageController.setWindowOrientation('free');
+
 	if (this.p) {
 		this.p.load();
 	}
-	this.controller.stageController.setWindowOrientation('free');
+
+	if (this.p.units) {
+		weights.setUnits(this.p.units);
+	}
 
 	/* Determine the smallest and largest values in our dataset */
 	this.min = this.p.target;
 	this.max = 0;
 
-	if (this.min == 0 && this.p.data.length) {
-		this.min = this.p.data[0].weight;
+	if (this.min == 0 && weights.count()) {
+		this.min = weights.w(0);
 	}
 
-	for (var i = 0; i < this.p.data.length; i++) {
-		this.min = Math.min(this.min, this.p.data[i].weight);
-		this.max = Math.max(this.max, this.p.data[i].weight);
+	for (var i = 0; i < weights.count(); i++) {
+		this.min = Math.min(this.min, weights.w(i));
+		this.max = Math.max(this.max, weights.w(i));
 	}
 
 	/* Pad a bid */
@@ -175,8 +191,8 @@ activate: function()
 	this.max = Math.max(this.max, this.min + 50);
 
 	/* The default view should make the most recent entry visible */
-	if (this.p.data.length && this.selected < this.p.data.length) {
-		this.scrollOffset = this.getX(this.p.data[this.selected].date) - (w * 0.7);
+	if (weights.count() && this.selected < weights.count()) {
+		this.scrollOffset = this.getX(weights.d(this.selected)) - (w * 0.7);
 	}
 
 	this.render(true);
@@ -281,8 +297,8 @@ handleCommand: function(event)
 			break;
 
 		case 'today':
-			if (this.p.data.length) {
-				this.scrollOffset = this.getX(this.p.data[this.selected].date) - (w * 0.7);
+			if (weights.count()) {
+				this.scrollOffset = this.getX(weights.d[this.selected]) - (w * 0.7);
 			} else {
 				this.scrollOffset = 0;
 			}
@@ -469,24 +485,24 @@ render: function(full)
 	var enddate		= this.getDate(this.scrollOffset + w);
 	var i;
 
-	for (i = 1; i < this.p.data.length; i++) {
-		if (this.p.data[i].date >= startdate) {
+	for (i = 1; i < weights.count(); i++) {
+		if (weights.d(i) >= startdate) {
 			i--;
 			break;
 		}
 	}
 
-	if (i < this.p.data.length) {
+	if (i < weights.count()) {
 		this.ctx.beginPath();
-		this.ctx.moveTo(this.getX(this.p.data[i].date),
-						this.getY(this.p.data[i].weight));
+		this.ctx.moveTo(this.getX(weights.d(i)),
+						this.getY(weights.w(i)));
 		i++;
 
-		for (; i < this.p.data.length; i++) {
-			this.ctx.lineTo(this.getX(this.p.data[i].date),
-							this.getY(this.p.data[i].weight));
+		for (; i < weights.count(); i++) {
+			this.ctx.lineTo(this.getX(weights.d(i)),
+							this.getY(weights.w(i)));
 
-			if (this.p.data[i].date >= enddate) {
+			if (weights.d(i) >= enddate) {
 				break;
 			}
 		}
@@ -502,33 +518,38 @@ render: function(full)
 		TODO: Make the projected lines fade as they get further away indicating
 		that the data is less accurate.
 	*/
-	if (this.p.data.length && this.p.data[this.p.data.length - 1].date <= enddate) {
-		var tardate = new Date(this.p.data[this.p.data.length - 1].date.getTime());
+	i = weights.count() - 1;
+	var tardate = weights.d(i);
+
+	if (tardate) {
+		/* Duplicate the date to make sure we don't modify the original */
+		tardate = new Date(tardate.getTime());
 
 		/* Add 30 days... */
 		tardate.setDate(tardate.getDate() + 30);
+
 		this.ctx.strokeStyle = 'rgba( 79, 121, 159, 0.3)';
 
 		this.ctx.beginPath();
-		this.ctx.moveTo(this.getX(this.p.data[this.p.data.length - 1].date),
-						this.getY(this.p.data[i - 1].weight));
+		this.ctx.moveTo(this.getX(weights.d(i)),
+						this.getY(weights.w(i)));
 
 		this.ctx.lineTo(this.getX(tardate),
-						this.getY(this.p.data[i - 1].weight - 20));
+						this.getY(weights.w(i) - 20));
 		this.ctx.stroke();
 	}
 
 	/* Draw a "dot" on each point */
-	for (var i = 0; i < this.p.data.length; i++) {
-		if (this.p.data[i].date < startdate ||
-			this.p.data[i].date > enddate
-		) {
+	for (var i = 0; i < weights.count(); i++) {
+		var d = weights.d(i);
+
+		if (d < startdate || d > enddate) {
 			continue;
 		}
 
 		this.ctx.beginPath();
-		this.ctx.arc(	this.getX(this.p.data[i].date),
-						this.getY(this.p.data[i].weight),
+		this.ctx.arc(	this.getX(d),
+						this.getY(weights.w(i)),
 						4, 0, 360, true);
 		this.ctx.fill();
 	}
@@ -539,14 +560,16 @@ render: function(full)
 	this.ctx.restore();
 
 
-	if (this.selected >= 0 && this.selected < this.p.data.length) {
+	var d;
+	var c;
+	if ((d = weights.d(this.selected)) && (c = weights.w(this.selected))) {
 		this.showHint("" +
-			this.p.data[this.selected].date.getMonth() + 1		+ "/" +
-			this.p.data[this.selected].date.getDate()			+ " (" +
-			this.NumToStr(this.p.data[this.selected].weight)	+ ")",
+			d.getMonth() + 1	+ "/" +
+			d.getDate()			+ " (" +
+			this.NumToStr(c)	+ ")",
 
-			this.getX(this.p.data[this.selected].date),
-			this.getY(this.p.data[this.selected].weight) - 3,
+			this.getX(d),
+			this.getY(c) - 3,
 
 			'rgba(255, 255, 255, 1)',
 			'rgba( 79, 121, 159, 1)', false);
@@ -644,20 +667,20 @@ tap: function(event)
 	var d	= this.getDate(this.scrollOffset + x);
 
 	/* Find the data point that is closest to where the user clicked */
-	for (var i = 0; i < this.p.data.length; i++) {
-		if (this.p.data[i].date > d) {
+	for (var i = 0; i < weights.count(); i++) {
+		if (weights.d(i) > d) {
 			break;
 		}
 	}
 
 	this.selected = i;
-	if (i < this.p.data.length && i > 0) {
+	if (i < weights.count() && i > 0) {
 		/*
 			The user clicked between data[i - 1] and data[i], but which is one
 			is the closest to the click?
 		*/
-		var a = d.getTime() - this.p.data[i - 1].date.getTime();
-		var b = this.p.data[i].date.getTime() - d.getTime();
+		var a = d.getTime() - weights.d(i - 1).getTime();
+		var b = weights.d(i).getTime() - d.getTime();
 
 		if (a < b) {
 			this.selected--;
@@ -724,14 +747,7 @@ getWeight: function(y)
 /* Return the X offset on the graph based on a specific date */
 getX: function(date)
 {
-	var start;
-
-	if (this.p.data.length) {
-		start = this.p.data[0].date.getTime();
-	} else {
-		start = (new Date()).getTime();
-	}
-
+	var start		= (weights.d(0) || new Date()).getTime();
 	var end			= date.getTime();
 	var w			= parseInt(this.controller.window.innerWidth);
 	var daywidth	= (w / this.daycount);
@@ -749,13 +765,9 @@ getX: function(date)
 */
 getDate: function(x)
 {
-	var ms			= ((x - 32) / this.daywidth) * (86400000);
+	var ms = ((x - 32) / this.daywidth) * (86400000);
 
-	if (this.p.data.length) {
-		return(new Date(this.p.data[0].date.getTime() + ms));
-	} else {
-		return(new Date((new Date()).getTime() + ms));
-	}
+	return(new Date((weights.d(0) || new Date()).getTime() + ms));
 },
 
 /*
