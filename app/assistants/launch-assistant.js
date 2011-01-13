@@ -24,6 +24,8 @@ var LaunchAssistant = Class.create({
 
 // TODO Test the skinnyr integration
 
+// TODO	Convert the "new weight" dialog into a scene again?  ugg
+
 setup: function()
 {
     $$('.translate').each(function(e) { e.update($L(e.innerHTML)); });
@@ -182,11 +184,7 @@ history: function()
 
 newweight: function()
 {
-	this.controller.showDialog({
-		template:		'newweight/newweight-dialog',
-		preventCancel:	false,
-		assistant:		new NewWeightDialog(this, this.p, NaN)
-	});
+	this.controller.stageController.pushScene('newweight', this.p, NaN);
 },
 
 horizLine: function(ctx, x, y, l)

@@ -295,21 +295,11 @@ handleCommand: function(event)
 			break;
 
 		case 'newrecord':
-			this.controller.showDialog({
-				template:		'newweight/newweight-dialog',
-				preventCancel:	false,
-				assistant:		new NewWeightDialog(this, this.p, NaN)
-			});
-
+			this.controller.stageController.pushScene('newweight', this.p, NaN);
 			break;
 
 		case 'editrecord':
-			this.controller.showDialog({
-				template:		'newweight/newweight-dialog',
-				preventCancel:	false,
-				assistant:		new NewWeightDialog(this, this.p, this.selected)
-			});
-
+			this.controller.stageController.pushScene('newweight', this.p, this.selected);
 			break;
 
 		case 'delrecord':

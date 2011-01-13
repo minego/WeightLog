@@ -14,11 +14,10 @@
 	ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-var NewWeightDialog = Class.create({
+var NewweightAssistant = Class.create({
 
-initialize: function(scene, prefs, selected)
+initialize: function(prefs, selected)
 {
-	this.controller	= scene.controller;
 	this.p			= prefs;
 	this.selected	= selected;
 
@@ -27,10 +26,8 @@ initialize: function(scene, prefs, selected)
 	}
 },
 
-setup: function(widget)
+setup: function()
 {
-	this.widget	= widget;
-
 	this.weight = "";
 
 	if (!isNaN(this.selected) && !isNaN(weights.w(this.selected))) {
@@ -58,6 +55,17 @@ setup: function(widget)
 			return(false);
 		}
 	}, this);
+
+	this.date = weights.d(this.selected) || new Date();
+	this.controller.setupWidget('date', {
+		label:				$L('Date'),
+		modelProperty:		'date'
+	}, this);
+	this.controller.setupWidget('time', {
+		label:				$L('Time'),
+		modelProperty:		'date'
+	}, this);
+
 
 	// TODO Disable the save button if the user hasn't entered a valid weight..
 
@@ -94,9 +102,9 @@ save: function()
 	this.controller.get('save').mojo.activate();
 
 	if (isNaN(this.selected)) {
-		weights.add(parseInt(this.weight));
+		weights.add(parseInt(this.weight), this.date);
 	} else {
-		weights.set(this.selected, parseInt(this.weight));
+		weights.set(this.selected, parseInt(this.weight), this.date);
 	}
 
 	weights.sync(function(worked) {
@@ -105,7 +113,7 @@ save: function()
 		this.controller.get('save').mojo.deactivate();
 
 		if (worked) {
-			this.widget.mojo.close();
+			this.controller.stageController.popScene();
 		} else {
 			this.controller.get('message').innerHTML = $L("Could not save new weight");
 		}
@@ -113,14 +121,14 @@ save: function()
 },
 
 close: function() {
-	this.widget.mojo.close();
+	this.controller.stageController.popScene();
 },
 
 NhandleCommand: function(event)
 {
 	event.stop();
 
-	this.widget.mojo.close();
+	this.controller.stageController.popScene();
 }
 
 });
