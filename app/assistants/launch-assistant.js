@@ -79,7 +79,7 @@ setup: function()
 		autoFocus:			true,
 		modifierState:		Mojo.Widget.numLock,
 		maxLength:			5,
-		changeOnKeyPress:	false,
+		changeOnKeyPress:	true,
 		label:				$L('Enter New Weight'),
 		hintText:			$L('Enter New Weight'),
 		charsAllow:			function(c)
@@ -97,16 +97,16 @@ setup: function()
 		}
 	}, this);
 
-	this.controller.setupWidget('saveweight', {
-		type:			Mojo.Widget.button
-	}, {
-		buttonLabel:	$L('Save'),
+	this.controller.listen('weight',	Mojo.Event.propertyChange, this.weightChange.bind(this));
+
+	this.buttonLabel = $L('View History');
+	this.controller.setupWidget('superbutton', {
+		type:			Mojo.Widget.activityButton,
 		buttonClass:	'primary'
-	});
-	this.controller.listen(this.controller.get('saveweight'), Mojo.Event.tap,
-		this.saveweight.bindAsEventListener(this));
+	}, this);
 
-
+	this.controller.listen(this.controller.get('superbutton'), Mojo.Event.tap,
+		this.superbutton.bindAsEventListener(this));
 
 	this.target = "";
 	if (this.p.target > 0) {
@@ -136,15 +136,6 @@ setup: function()
 		}
 	}, this);
 
-	this.controller.setupWidget('viewchart', {
-		type:			Mojo.Widget.button
-	}, {
-		buttonLabel:	$L('View History'),
-		buttonClass:	'primary'
-	});
-	this.controller.listen(this.controller.get('viewchart'), Mojo.Event.tap,
-		this.viewChart.bindAsEventListener(this));
-
 	this.controller.listen('target',	Mojo.Event.propertyChange, this.change.bind(this));
 	this.controller.listen('height',	Mojo.Event.propertyChange, this.change.bind(this));
 	this.controller.listen('units',		Mojo.Event.propertyChange, this.change.bind(this));
@@ -161,11 +152,10 @@ cleanup: function()
 	this.controller.stopListening('target',	Mojo.Event.propertyChange, this.change.bind(this));
 	this.controller.stopListening('height',	Mojo.Event.propertyChange, this.change.bind(this));
 	this.controller.stopListening('units',	Mojo.Event.propertyChange, this.change.bind(this));
+	this.controller.stopListening('weight',	Mojo.Event.propertyChange, this.weightChange.bind(this));
 
-	this.controller.stopListening(this.controller.get('saveweight'), Mojo.Event.tap,
-		this.saveweight.bindAsEventListener(this));
-	this.controller.stopListening(this.controller.get('viewchart'), Mojo.Event.tap,
-		this.viewChart.bindAsEventListener(this));
+	this.controller.stopListening(this.controller.get('superbutton'), Mojo.Event.tap,
+		this.superbutton.bindAsEventListener(this));
 },
 
 activate: function()
@@ -209,14 +199,41 @@ change: function()
     this.p.save();
 },
 
-viewChart: function()
+weightChange: function()
 {
-	this.controller.stageController.pushScene('chart');
+	var w = parseInt(this.weight);
+
+	if (!isNaN(w) && w > 0 && w <= 999) {
+		this.buttonLabel = $L('Save New Weight');
+	} else {
+		this.buttonLabel = $L('View History');
+	}
+
+	this.controller.modelChanged(this);
 },
 
-saveweight: function()
+superbutton: function()
 {
-	this.controller.stageController.pushScene('saveweight', this.p, NaN);
+	var w = parseInt(this.weight);
+
+	if (!isNaN(w) && w > 0 && w <= 999) {
+		this.controller.get('superbutton').mojo.activate();
+
+		weights.add(w);
+		weights.sync(function(worked) {
+			// TODO Let the user know that the sync worked...
+			Mojo.log('Sync worked');
+
+			this.weight = "";
+			this.controller.get('superbutton').mojo.deactivate();
+
+			this.buttonLabel = $L('View History');
+			this.controller.modelChanged(this);
+		}.bind(this));
+	} else {
+		this.controller.get('superbutton').mojo.deactivate();
+		this.controller.stageController.pushScene('chart');
+	}
 },
 
 horizLine: function(ctx, x, y, l)
