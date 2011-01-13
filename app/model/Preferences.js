@@ -54,16 +54,9 @@ Preferences.prototype.load = function()
 		this.target	= prefs['target'];
 	}
 
-	if (prefs['data'] != undefined) {
-		this.data	= prefs['data'];
-
-		for (var i = 0; i < this.data.length; i++) {
-			this.data[i].date = new Date(this.data[i].date);
-		}
-	}
-
 	this.units		= prefs['units']	|| this.units;
 	this.scale		= prefs['scale']	|| this.scale;
+	this.authtoken	= prefs['authtoken']|| this.authtoken;
 };
 
 Preferences.prototype.dump = function()
@@ -72,14 +65,10 @@ Preferences.prototype.dump = function()
 		'height':	this.height,
 		'unit':		this.unit,
 		'scale':	this.scale,
+		'authtoken':this.authtoken,
 
-		'data':		this.data,
 		'target':	this.target
 	};
-
-	for (var i = 0; i < dump.data.length; i++) {
-		dump.data[i].date = dump.data[i].date.getTime();
-	}
 
 	return(dump);
 };
@@ -91,11 +80,10 @@ Preferences.prototype.save = function()
 
 Preferences.prototype.reset = function()
 {
-	this.height		= this.height	|| (5 * 12) + 6;
-	this.units		= this.units	|| 'US';
-	this.scale		= this.scale	|| 'week';
-	this.target		= this.target	|| 0;
-
-	this.data		= [];
+	this.height		= (5 * 12) + 6;
+	this.units		= 'US';
+	this.scale		= 'week';
+	this.authtoken	= null;
+	this.target		= NaN;
 };
 

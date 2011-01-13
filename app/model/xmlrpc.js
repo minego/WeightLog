@@ -45,7 +45,8 @@ var xmlrpc = function(server, method, params, callback, callErr, callFinal) {
 
             var ret = null;
             try {
-Mojo.log('request.responseText: ' + request.responseText);
+				// Mojo.log('response XML: ' + request.responseText);
+
                 if (request.responseXML)
                     ret = xmlrpc.parseResponse(request.responseXML);
                 else
@@ -57,8 +58,6 @@ Mojo.log('request.responseText: ' + request.responseText);
             }
 
             try {
-Mojo.log('Calling callback');
-Mojo.log('result is: ' + ret);
                 callback(ret);
             } catch (err) {
                 err.message = "callback: " + err.message;
@@ -72,7 +71,7 @@ Mojo.log('result is: ' + ret);
     };
 
     var sending = xmlrpc.writeCall(method, params);
-Mojo.log('sending: ' + sending);
+	// Mojo.log('request XML: ' + sending);
     request.send(sending);
 };
 
@@ -220,29 +219,38 @@ xmlrpc.parse = function(value) {
 
 	var v = xmlrpc.findChild(type);
 	var d = type.childNodes.length ? type.childNodes[0] : null;
-Mojo.log('Found type: ' + type.nodeName);
     switch (type.nodeName) {
         case "boolean":
             return (d && d.data == "1") ? true : false;
+
         case "i4":
         case "int":
             return parseInt(d.data);
+
         case "double":
             return parseFloat(d.data);
+
         case "#text": // Apache XML-RPC 2 doesn't wrap strings with <string>
             return type.data;
+
         case "string":
             return d ? d.data : null;
-        case "array":
-            var res = new Array();
 
-            for (var i = 0; i < v.childNodes.length; i++) {
-                res[res.length] = xmlrpc.parse(v.childNodes[i]);
+        case "array":
+            var res		= new Array();
+			var array	= xmlrpc.findChild(type, 'data') || type;
+
+            for (var i = 0; i < array.childNodes.length; i++) {
+				if (array.childNodes[i].nodeName != 'value') {
+					continue;
+
+				}
+				res[res.length] = xmlrpc.parse(v.childNodes[i]);
 			}
 
             return res;
+
         case "struct":
-Mojo.log('Found a struct');
             var members = type.childNodes;
             var res = {};
 
@@ -252,21 +260,38 @@ Mojo.log('Found a struct');
 				}
 
 				var name	= xmlrpc.findChild(members[i], "name").childNodes[0].data;
-Mojo.log('member: ' + name);
 				res[name]	= xmlrpc.parse(xmlrpc.findChild(members[i], "value"));
-Mojo.log('value: ' + res[name]);
             }
             return res;
+
         case "dateTime.iso8601":
-            var s = d.data;
-            var d = new Date();
-            d.setUTCFullYear(s.substr(0, 4));
-            d.setUTCMonth(parseInt(s.substr(4, 2)) - 1);
-            d.setUTCDate(s.substr(6, 2));
-            d.setUTCHours(s.substr(9, 2));
-            d.setUTCMinutes(s.substr(12, 2));
-            d.setUTCSeconds(s.substr(15, 2));
+            var s	= d.data;
+            var d	= new Date();
+			var m	= s.trim().match(/(\d\d\d\d)(-)?(\d\d)(-)?(\d\d)(T)?(\d\d)(:)?(\d\d)(:)?(\d\d)(\.\d+)?(Z|([+-])(\d\d)(:)?(\d\d))/);
+			var o	= 0;
+
+			if (m) {
+				d.setUTCDate(1);
+				d.setUTCFullYear(	parseInt(m[1], 10), parseInt(m[3], 10) - 1,	parseInt(m[5], 10));
+				d.setUTCHours(		parseInt(m[7], 10), parseInt(m[9], 10),		parseInt(m[11],10));
+
+				if (m[12]) {
+					d.setUTCMilliseconds(parseFloat(m[12]) * 1000);
+				} else {
+					d.setUTCMilliseconds(0);
+				}
+
+				if (m[13] != 'Z') {
+					o = (m[15] * 60) + parseInt(m[17], 10);
+					o *= ((m[14] == '-') ? -1 : 1);
+					d.setTime(d.getTime() - o * 60 * 1000);
+				}
+			} else {
+				d.setTime(Date.parse(s));
+			}
+
             return d;
+
         case "base64":
             alert("TODO base64"); // XXX
         default:
