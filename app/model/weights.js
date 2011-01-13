@@ -149,7 +149,7 @@ count: function()
 weight: function(offset) { return(weights.w(offset)); },
 w: function(offset)
 {
-	if (offset < 0 || offset >= weights.data.length) {
+	if (isNaN(offset) || offset < 0 || offset >= weights.data.length) {
 		return(NaN);
 	}
 
@@ -171,7 +171,7 @@ w: function(offset)
 date: function(offset) { return(weights.d(offset)); },
 d: function(offset)
 {
-	if (offset < 0 || offset >= weights.data.length) {
+	if (isNaN(offset) || offset < 0 || offset >= weights.data.length) {
 		return(NaN);
 	}
 
@@ -180,7 +180,7 @@ d: function(offset)
 
 id: function(offset)
 {
-	if (offset < 0 || offset >= weights.data.length) {
+	if (isNaN(offset) || offset < 0 || offset >= weights.data.length) {
 		return(null);
 	}
 
@@ -216,7 +216,7 @@ add: function(weight, date)
 /* Returns true on success */
 set: function(offset, weight, date)
 {
-	if (offset < 0 || offset >= weights.data.length) {
+	if (isNaN(offset) || offset < 0 || offset >= weights.data.length) {
 		return(false);
 	}
 
@@ -238,7 +238,7 @@ set: function(offset, weight, date)
 /* Returns true on succes... will modify the offset of other records */
 del: function(offset)
 {
-	if (offset < 0 || offset >= weights.data.length) {
+	if (isNaN(offset) || offset < 0 || offset >= weights.data.length) {
 		return(false);
 	}
 
