@@ -16,7 +16,10 @@
 
 // TODO Should year be hidden??
 
-// TODO Support units other than pound...
+// TODO Adjust the labels based on the selected units
+
+// TODO Update the BMI calculation to work with the selected units  (remember
+//		that weights.w() will return a value in the user's selected unit...
 
 var ChartAssistant = Class.create({
 
@@ -64,6 +67,9 @@ setup: function()
 				}, {
 					command:		'editrecord',
 					label:			$L('Modify selected record')
+				}, {
+					command:		'delrecord',
+					label:			$L('Delete selected record')
 				}, {
 					command:		'today',
 					label:			$L('Today')
@@ -289,11 +295,30 @@ handleCommand: function(event)
 			break;
 
 		case 'newrecord':
-			this.controller.stageController.pushScene('enterweight', this.p, NaN);
+			this.controller.showDialog({
+				template:		'newweight/newweight-dialog',
+				preventCancel:	false,
+				assistant:		new NewWeightDialog(this, this.p, NaN)
+			});
+
 			break;
 
 		case 'editrecord':
-			this.controller.stageController.pushScene('enterweight', this.p, this.selected);
+			this.controller.showDialog({
+				template:		'newweight/newweight-dialog',
+				preventCancel:	false,
+				assistant:		new NewWeightDialog(this, this.p, this.selected)
+			});
+
+			break;
+
+		case 'delrecord':
+			weights.del(this.selected);
+
+			// TODO	Somehow let the user know that we are busy syncing...
+			weights.sync(function() {
+				this.render();
+			}.bind(this));
 			break;
 
 		case 'today':
@@ -451,7 +476,6 @@ render: function(full)
 	*/
 	this.ctx.save();
 	this.ctx.translate(0, h);
-
 
 
 	/* Setup some styles before drawing the data points and line */
@@ -663,30 +687,38 @@ dragging: function(event)
 
 tap: function(event)
 {
+	var h	= parseInt(this.controller.window.innerHeight);
+	var w	= parseInt(this.controller.window.innerWidth);
 	var x	= Event.pointerX(event.down);
-	var d	= this.getDate(this.scrollOffset + x);
+	var y	= Event.pointerY(event.down);
+	var d	= -1;
+	var s	= -1;
+
+	/* The y axis is negative */
+	y = -(h - y);
 
 	/* Find the data point that is closest to where the user clicked */
 	for (var i = 0; i < weights.count(); i++) {
-		if (weights.d(i) > d) {
+		var px = this.getX(weights.d(i));
+		var py = this.getY(weights.w(i));
+
+		if (px > w) {
 			break;
 		}
-	}
 
-	this.selected = i;
-	if (i < weights.count() && i > 0) {
-		/*
-			The user clicked between data[i - 1] and data[i], but which is one
-			is the closest to the click?
-		*/
-		var a = d.getTime() - weights.d(i - 1).getTime();
-		var b = weights.d(i).getTime() - d.getTime();
+		if (px < 0) {
+			continue;
+		}
 
-		if (a < b) {
-			this.selected--;
+		var pd = ((px - x) * (px - x)) + ((py - y) * (py - y));
+
+		if (-1 == d || pd < d) {
+			d = pd;
+			s = i;
 		}
 	}
 
+	this.selected = s;
 	this.render();
 },
 
