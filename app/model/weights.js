@@ -59,6 +59,11 @@ load: function(authtoken, cb, keeplocal)
 			An auth token was not provided, so the local records are all that
 			we need.
 		*/
+
+		weights.data = weights.data.sort(function(a, b) {
+			return(a[skinnyr.date].getTime() - b[skinnyr.date].getTime());
+		});
+
 		weights.loading	= false;
 		weights.loaded	= true;
 		cb();
