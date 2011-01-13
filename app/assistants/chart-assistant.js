@@ -578,7 +578,7 @@ render: function(full)
 	var c;
 	if ((d = weights.d(this.selected)) && (c = weights.w(this.selected))) {
 		this.showHint("" +
-			d.getMonth() + 1	+ "/" +
+			(d.getMonth() + 1)	+ "/" +
 			d.getDate()			+ " (" +
 			this.NumToStr(c)	+ ")",
 
