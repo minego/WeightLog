@@ -45,7 +45,7 @@ var xmlrpc = function(server, method, params, callback, callErr, callFinal) {
 
             var ret = null;
             try {
-				// Mojo.log('response XML: ' + request.responseText);
+				Mojo.log('response XML: ' + request.responseText);
 
                 if (request.responseXML)
                     ret = xmlrpc.parseResponse(request.responseXML);
@@ -53,16 +53,15 @@ var xmlrpc = function(server, method, params, callback, callErr, callFinal) {
                     throw "bad xml: '" + request.responseText + "'";
             } catch (err) {
                 err.message = "xmlrpc: " + err.message;
-                callErr(err);
-                throw err;
+				Mojo.log(err.message);
+                callErr(err.message);
             }
 
             try {
                 callback(ret);
             } catch (err) {
                 err.message = "callback: " + err.message;
-                callErr(err);
-                throw err;
+                callErr(err.message);
             }
         } finally {
             if (callFinal)
@@ -71,7 +70,7 @@ var xmlrpc = function(server, method, params, callback, callErr, callFinal) {
     };
 
     var sending = xmlrpc.writeCall(method, params);
-	// Mojo.log('request XML: ' + sending);
+	Mojo.log('request XML: ' + sending);
     request.send(sending);
 };
 
@@ -82,7 +81,7 @@ xmlrpc.writeCall = function(method, params) {
 
     if (params && params.length > 0) {
         out += "<params>\n";
-        for (var i=0; i < params.length; i++) {
+        for (var i = 0; i < params.length; i++) {
             out += "<param><value>";
             out += xmlrpc.writeParam(params[i]);
             out += "</value></param>";
@@ -95,26 +94,39 @@ xmlrpc.writeCall = function(method, params) {
 };
 
 xmlrpc.writeParam = function(param) {
-    if (param == null)
+    if (param == null) {
         return "<nil />";
+	}
+
     switch (typeof(param)) {
-        case "boolean":     return "<boolean>" + param + "</boolean>";
+		default:
+			return "<nil />";
+
+        case "boolean":
+			return "<boolean>" + param + "</boolean>";
+
         case "string":
             param = param.replace(/</g, "&lt;");
             param = param.replace(/&/g, "&amp;");
+
             return "<string>" + param + "</string>";
-        case "undefined":   return "<nil/>";
+
+        case "undefined":
+			return "<nil/>";
+
         case "number":
-            var r =  /\./.test(param) ?
-                "<double"> + param + "</double>" :
-                "<int>" + param + "</int>";
-			return r;
+			if (/\./.test(param)) {
+				return("<double>" + param + "</double>");
+			} else {
+                return("<int>" + param + "</int>");
+			}
+
         case "object":
             if (param.constructor == Array) {
                 out = "<array><data>\n";
                 for (var i in param) {
                     out += "  <value>";
-                    xmlrpc.writeParam(param[i]);
+                    out += xmlrpc.writeParam(param[i]);
                     out += "</value>\n";
                 }
                 out += "</data></array>";
