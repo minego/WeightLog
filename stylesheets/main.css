@@ -17,7 +17,16 @@ html, body {
 	z-index:			3;
 }
 
-.chart canvas {
+#scroller {
+	z-index:			5;
+}
+
+#scroller div {
+	width:				1000%;
+	height:				100%;
+}
+
+.chart canvas, #scroller {
 	position:			absolute;
 	left:				0px;
 	top:				0px;
