@@ -221,7 +221,7 @@ loadValues: function()
 
 	weights.setUnits(this.p.units);
 
-	if (!isNaN(this.p.target)) {
+	if (!isNaN(this.p.target) && this.p.target > 0) {
 		switch (this.p.units) {
 			default:
 			case 'US':			u = skinnyr.lb;		break;
@@ -241,7 +241,7 @@ loadValues: function()
 		this.controller.get('targetunit').innerHTML = u;
 	}
 
-	if (!isNaN(this.p.height)) {
+	if (!isNaN(this.p.height) && this.p.height > 0) {
 		switch (this.p.units) {
 			default:
 			case 'US':

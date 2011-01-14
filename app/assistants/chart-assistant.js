@@ -456,7 +456,7 @@ render: function(full)
 		c.fillStyle	= 'rgba(0, 0, 0, 0.7)';
 		c.fillRect(0, 0, 32, h);
 
-		if (!isNaN(this.p.height)) {
+		if (!isNaN(this.p.height) && this.p.height > 0) {
 			c.fillRect(w - 32,	0, 32, h);
 		}
 
@@ -504,7 +504,7 @@ render: function(full)
 					c.fillText(this.NumToStr(y), 16, yo + 5);
 				}
 
-				if (!isNaN(this.p.height)) {
+				if (!isNaN(this.p.height) && this.p.height > 0) {
 					c.fillText(this.NumToStr(this.getBMI(y)),
 						w - 16, yo + 5);
 				}
@@ -526,7 +526,7 @@ render: function(full)
 		c.fillStyle	= 'rgba(255, 255, 255, 0.4)';
 		c.fillText(u, 16, -(h - 16));
 
-		if (!isNaN(this.p.height)) {
+		if (!isNaN(this.p.height) && this.p.height > 0) {
 			c.fillText('BMI', w - 16, -(h - 16));
 		}
 
@@ -834,14 +834,9 @@ NumToStr: function(num)
 	return(str);
 },
 
-KGtoBMI: function(kgs, meters)
-{
-	return(kgs / (meters * meters));
-},
-
 getBMI: function(weight)
 {
-	if (isNaN(this.p.height)) {
+	if (isNaN(this.p.height) || this.p.height == 0) {
 		return(NaN);
 	}
 
