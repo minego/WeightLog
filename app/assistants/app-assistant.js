@@ -25,7 +25,10 @@ AppAssistant.prototype.handleLaunch = function(params)
 {
 	this.controller.createStageWithCallback('weightlog',
 		function(stageController) {
-			stageController.pushScene('chart');
+			stageController.pushScene({
+				name:					'chart',
+				disableSceneScroller:	true
+			});
 		}
 	);
 };

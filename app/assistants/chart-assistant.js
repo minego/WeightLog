@@ -14,19 +14,18 @@
 	ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-// TODO Get rid of the 'launch' scene, and add a dialog that gets displayed if
-//		there are no records.  It should have a button to add a new weight and
-//		a button to go to preferences, along with some help text...
-
 // TODO Should year be hidden??
 
 // TODO Test the hell out of the skinnyr integration...
+
+// TODO Modify seems to be broken....
 
 var ChartAssistant = Class.create({
 
 setup: function()
 {
 	var w = parseInt(this.controller.window.innerWidth);
+	var h = parseInt(this.controller.window.innerHeight);
 
 	if (!this.p) {
 		this.p = new Preferences('weightlog');
@@ -37,25 +36,8 @@ setup: function()
 	/* I'd like consistent events, regardless of the orientation */
 	this.controller.useLandscapePageUpDown(false);
 
-	this.controller.listen(document, 'resize',
-		this.screenSizeChanged.bind(this));
-
-
-	/*
-		Register for drag events on the 'labels' canvas instead of on the
-		'chart' canvas, because it is on top.  The 'chart' is the one that will
-		be scrolled though.
-	*/
-	var labels	= this.controller.get('labels');
-
-	this.controller.listen(labels, Mojo.Event.dragStart,
-		this.dragStart.bindAsEventListener(this), true);
-	this.controller.listen(labels, Mojo.Event.dragging,
-		this.dragging.bindAsEventListener(this), true);
-
-	this.controller.listen(labels, Mojo.Event.tap,
-		this.tap.bindAsEventListener(this), true);
-
+	this.screenSizeChanged = this.screenSizeChanged.bind(this);
+	this.controller.listen(document, 'resize', this.screenSizeChanged);
 
 	// TODO Add shortcut keys...
 	/* Setup the app menu */
@@ -127,6 +109,32 @@ setup: function()
 		}
 	);
 
+	/*
+		A large (but empty) dummy div sits on top of the chart.  This div is
+		scrollable using the regular scroller.  When it is scrolled the chart
+		is re-rendered() based on the new position, but the chart doesn't
+		actually scroll.  This allows for inertia scrolling of the chart.
+
+		Since this div sits on top of everything else all user interaction is
+		through it, including taps.
+	*/
+	// TODO Adjust the width of dummy based on the records that have been added
+	//		(with a bit of padding for the projection) to make it bounce at the
+	//		other side as well.... This may make it hard to see the projection
+	//		though....
+	this.controller.get('dummy').style.width	= '1000000px';
+	this.controller.get('dummy').style.height	= h	+ 'px';
+
+	this.controller.setupWidget('scroller', { mode: 'horizontal' }, {});
+	// this.controller.get('scroller').mojo.scrollTo(w * 5, 0, false, true);
+
+	this.moved = this.moved.bindAsEventListener(this);
+	this.controller.listen('scroller', 'scroll', this.moved, true);
+
+	this.tap = this.tap.bindAsEventListener(this);
+	this.controller.listen('scroller', Mojo.Event.tap, this.tap, true);
+
+
 	this.min			= 0;
 	this.max			= 0;
 
@@ -138,22 +146,13 @@ setup: function()
 	/* The number of days to display.  Adjusting this will scale the chart. */
 	switch (this.p.scale) {
 		default:
-		case 'week':
-			this.daycount		= 9;
-			break;
-
-		case 'month':
-			this.daycount		= 35;
-			break;
-
-		case 'year':
-			this.daycount		= 356;
-			break;
+		case 'week':	this.daycount	= 9;	break;
+		case 'month':	this.daycount	= 35;	break;
+		case 'year':	this.daycount	= 356;	break;
 	}
 
 	/* Default to today (Set it to 0 first, because getX uses it) */
 	this.scrollOffset	= 0;
-	this.scrollOffset	= this.getX(new Date()) - (w * 0.7);
 
 	/* Now we need data */
 	if (!weights.loaded) {
@@ -174,6 +173,11 @@ setup: function()
 
 ready: function()
 {
+	var w	= parseInt(this.controller.window.innerWidth);
+
+	this.controller.get('scroller').mojo.scrollTo(
+		-(this.getX(new Date()) - (w * 0.7) + this.scrollOffset),
+		0, true, false);
 },
 
 activate: function()
@@ -241,19 +245,9 @@ activate: function()
 
 cleanup: function()
 {
-	this.controller.stopListening(document, 'resize',
-		this.screenSizeChanged.bind(this));
-
-
-	var labels = this.controller.get('labels');
-
-	this.controller.stopListening(labels, Mojo.Event.dragStart,
-		this.dragStart.bind(this));
-	this.controller.stopListening(labels, Mojo.Event.dragging,
-		this.dragging.bind(this));
-
-	this.controller.stopListening(labels, Mojo.Event.tap,
-		this.tap.bind(this));
+	this.controller.stopListening(document,		'resize',		this.screenSizeChanged);
+	this.controller.stopListening('scroller',	'scroll',		this.moved);
+	this.controller.stopListening('scroller',	Mojo.Event.tap,	this.tap);
 },
 
 screenSizeChanged: function()
@@ -366,7 +360,9 @@ handleCommand: function(event)
 		case 'today':
 			var w	= parseInt(this.controller.window.innerWidth);
 
-			this.scrollOffset = this.getX(new Date()) - (w * 0.7);
+			this.controller.get('scroller').mojo.scrollTo(
+				-(this.getX(new Date()) - (w * 0.7) + this.scrollOffset),
+				0, true, false);
 
 			this.render();
 			break;
@@ -611,6 +607,8 @@ render: function(full)
 
 		At least one record is required for each set, and no more than 5.
 	*/
+	// TODO Calculate the rate whenever the data changes, instead of doing it
+	//		on every render.
 	if (projection && weights.count() >= 2) {
 		var samples		= Math.min(5, Math.floor(weights.count() / 2));
 		var a			= { w: 0, d: 0, c: 0 };
@@ -813,6 +811,12 @@ tap: function(event)
 	this.render();
 },
 
+moved: function(event)
+{
+	this.scrollOffset = this.controller.get('scroller').scrollLeft;
+	this.render();
+},
+
 /*
 	****************************************************************************
 	Helper functions used during rendering
@@ -898,8 +902,8 @@ getX: function(date)
 	var daywidth	= (w / this.daycount);
 	var days		= (end - start) / (86400000);
 
-	/* Pad the first point by 32 for the weight labels */
-	return((32 + (days * daywidth)) - this.scrollOffset);
+	/* Pad the first point by 45 for the weight labels */
+	return((45 + (days * daywidth)) - this.scrollOffset);
 },
 
 /*
