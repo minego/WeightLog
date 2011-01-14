@@ -23,9 +23,9 @@ AppAssistant.prototype.handleCommand = function(event)
 
 AppAssistant.prototype.handleLaunch = function(params)
 {
-	this.controller.createStageWithCallback('launch',
+	this.controller.createStageWithCallback('weightlog',
 		function(stageController) {
-			stageController.pushScene('launch');
+			stageController.pushScene('chart');
 		}
 	);
 };

@@ -14,6 +14,10 @@
 	ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+// TODO Get rid of the 'launch' scene, and add a dialog that gets displayed if
+//		there are no records.  It should have a button to add a new weight and
+//		a button to go to preferences, along with some help text...
+
 // TODO Should year be hidden??
 
 // TODO Adjust the labels based on the selected units
@@ -65,16 +69,23 @@ setup: function()
 					command:		'newrecord',
 					label:			$L('Enter current weight')
 				}, {
-					command:		'editrecord',
-					label:			$L('Modify selected record')
-				}, {
-					command:		'delrecord',
-					label:			$L('Delete selected record')
+					label:			$L('Selected Record'),
+					items: [
+						{
+							command:'editrecord',
+							label:	$L('Modify')
+						}, {
+							command:'delrecord',
+							label:	$L('Delete')
+						}
+					]
 				}, {
 					command:		'today',
-					label:			$L('Today')
-				},
-				{
+					label:			$L('Goto Today')
+				}, {
+					command:		'prefs',
+					label:			$L('Preferences & Accounts')
+				}, {
 					command:		'about',
 					label:			$L('About')
 				},
@@ -143,7 +154,7 @@ setup: function()
 
 	/* Now we need data */
 	if (!weights.loaded) {
-		weights.load(this.p.authtoken, function() {
+		weights.load(this.p.skinnyr.authtoken, function() {
 			/* The selected item defaults to the last one */
 			this.selected = weights.count() - 1;
 
@@ -285,9 +296,24 @@ handleCommand: function(event)
 
 	switch (cmd) {
 		case 'about':
-			// TODO Create an about page.  It has to give credit for the icon
-			// (see http://www.chris-wallace.com/2009/10/18/monday-freebie-vector-scale-icon/ )
-			this.controller.stageController.pushScene('about');
+			var msg = [
+				$L('Copyright 2010-2011, Micah N Gorrell.\n'),
+				$L('Icon icopyright: Chris Wallace.'),
+				$L('www.chris-wallace.com/2009/10/18/monday-freebie-vector-scale-icon/')
+			].join('  \n');
+
+			 this.controller.showAlertDialog({
+				title:		$L("Weight Log"),
+				message:	msg,
+
+				onChoose:	function(value) {},
+				choices:	[{ label: $L("OK"), value:"" }]
+			});
+
+			break;
+
+		case 'prefs':
+			this.controller.stageController.pushScene('prefs', this.p);
 			break;
 
 		case 'back':

@@ -1,0 +1,40 @@
+<div class="palm-page-header multi-line">
+	<div class="palm-page-header-wrapper">
+		<div class="icon prefs"></div>
+		<div class="title translate">Preferences &amp; Accounts</div>
+	</div>
+</div>
+
+<div class="palm-group">
+	<div class="palm-group-title"><span class="translate">Options</span></div>
+	<div class="palm-list">
+
+		<div class="palm-row first">
+			<div class="palm-row-wrapper">
+				<div id="units" x-mojo-element="ListSelector"></div>
+			</div>
+		</div>
+
+		<div class="palm-row">
+			<div class="palm-row-wrapper textfield-group" x-mojo-focus-highlight="true">
+				<div class="title">
+					<div class="label translate">Target Weight</div>
+					<div x-mojo-element="TextField" name="textField" id="target"></div>
+				</div>
+			</div>
+		</div>
+
+		<div class="palm-row last">
+			<div class="palm-row-wrapper">
+				<div id="height" x-mojo-element="ListSelector"></div>
+			</div>
+		</div>
+
+	</div>
+</div>
+
+<div id="accounts" x-mojo-element="List"></div>
+
+<div x-mojo-element="Button" id="sync"></div>
+<div x-mojo-element="Button" id="add" ></div>
+
