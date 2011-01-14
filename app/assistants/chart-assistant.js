@@ -575,6 +575,7 @@ render: function(full)
 
 	var startdate	= this.getDate(this.scrollOffset);
 	var enddate		= this.getDate(this.scrollOffset + w);
+	var projection	= true;
 	var i;
 
 	for (i = 1; i < weights.count(); i++) {
@@ -595,6 +596,8 @@ render: function(full)
 							this.getY(weights.w(i)));
 
 			if (weights.d(i) >= enddate) {
+				/* There is no need to do a projection if we can't see it */
+				projection = false;
 				break;
 			}
 		}
@@ -602,32 +605,52 @@ render: function(full)
 	}
 
 	/*
-		Draw a projected line...
+		Draw a simple projection based on 2 data sets.  Take the most recent x
+		records, and average them (dates and weights).  Do the same for the next
+		most recent x records.  The difference becomes the projected rate.
 
-		TODO: Calculate a rate based on the last few days of data and draw a
-		projected line to the end of the graph based on that rate.
-
-		TODO: Make the projected lines fade as they get further away indicating
-		that the data is less accurate.
+		At least one record is required for each set, and no more than 5.
 	*/
-	i = weights.count() - 1;
-	var tardate = weights.d(i);
+	if (projection && weights.count() >= 2) {
+		var samples		= Math.min(5, Math.floor(weights.count() / 2));
+		var a			= { w: 0, d: 0, c: 0 };
+		var b			= { w: 0, d: 0, c: 0 };
 
-	if (tardate) {
-		/* Duplicate the date to make sure we don't modify the original */
-		tardate = new Date(tardate.getTime());
+		for (i = weights.count() - 1; i >= 0; i--) {
+			if (a.c < samples) {
+				a.w += weights.w(i);
+				a.d += weights.d(i).getTime();
+				a.c++;
+			} else if (b.c < samples) {
+				b.w += weights.w(i);
+				b.d += weights.d(i).getTime();
+				b.c++;
+			} else {
+				break;
+			}
+		}
 
-		/* Add 30 days... */
-		tardate.setDate(tardate.getDate() + 30);
+		a.w = a.w / a.c;
+		a.d = a.d / a.c;
+
+		b.w = b.w / a.c;
+		b.d = b.d / a.c;
 
 		this.ctx.strokeStyle = 'rgba( 79, 121, 159, 0.3)';
 
-		this.ctx.beginPath();
-		this.ctx.moveTo(this.getX(weights.d(i)),
-						this.getY(weights.w(i)));
+		var i		= weights.count() - 1;
+		var x		= this.getX(weights.d(i));
+		var y		= this.getY(weights.w(i));
+		var left	= this.getDate(this.scrollOffset + w).getTime() -
+						weights.d(i).getTime();
 
-		this.ctx.lineTo(this.getX(tardate),
-						this.getY(weights.w(i) - 20));
+		this.ctx.beginPath();
+		this.ctx.moveTo(x, y);
+
+		/* Scale the projected rate to 'left' milliseconds */
+		var diff	= (((b.w - a.w) / (b.d - a.d)) * left);
+
+		this.ctx.lineTo(w, this.getY(weights.w(i) + diff));
 		this.ctx.stroke();
 	}
 
