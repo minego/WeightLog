@@ -147,14 +147,14 @@ count: function()
 	to weights.setUnits().
 */
 weight: function(offset) { return(weights.w(offset)); },
-w: function(offset)
+w: function(offset, unit)
 {
 	if (isNaN(offset) || offset < 0 || offset >= weights.data.length) {
 		return(NaN);
 	}
 
 	var u;
-	switch (weights.units) {
+	switch (unit || weights.units) {
 		default:
 		case 'US':			u = skinnyr.lb;		break;
 		case 'metric':		u = skinnyr.kg;		break;

@@ -64,7 +64,7 @@ Preferences.prototype.dump = function()
 {
 	var dump = {
 		'height':			this.height,
-		'unit':				this.unit,
+		'units':			this.units,
 		'scale':			this.scale,
 		'target':			this.target,
 

@@ -20,8 +20,7 @@
 
 // TODO Should year be hidden??
 
-// TODO Update the BMI calculation to work with the selected units  (remember
-//		that weights.w() will return a value in the user's selected unit...
+// TODO Test the hell out of the skinnyr integration...
 
 var ChartAssistant = Class.create({
 
@@ -175,6 +174,13 @@ ready: function()
 activate: function()
 {
 	var w = parseInt(this.controller.window.innerWidth);
+	var u;
+	switch (this.p.units) {
+		default:
+		case 'US':			u = skinnyr.lb;		break;
+		case 'metric':		u = skinnyr.kg;		break;
+		case 'imperial':	u = skinnyr.stone;	break;
+	}
 
 	this.controller.stageController.setWindowOrientation('free');
 
@@ -186,8 +192,25 @@ activate: function()
 		weights.setUnits(this.p.units);
 	}
 
+	/*
+		Convert the target weight to the user's unit of choice (it is stored in
+		metric, as is everything else)
+	*/
+	this.target = 0;
+	if (this.p.target) {
+		var u;
+		switch (this.p.units) {
+			default:
+			case 'US':			u = skinnyr.lb;		break;
+			case 'metric':		u = skinnyr.kg;		break;
+			case 'imperial':	u = skinnyr.stone;	break;
+		}
+
+		this.target = Math.round(this.p.target * u * 10) / 10;
+	}
+
 	/* Determine the smallest and largest values in our dataset */
-	this.min = this.p.target;
+	this.min = this.target;
 	this.max = 0;
 
 	if (this.min == 0 && weights.count()) {
@@ -200,16 +223,17 @@ activate: function()
 	}
 
 	/* Pad a bid */
-	this.max += 10;
-	this.min -= 10;
+	this.max += (4.5 * u);
+	this.min -= (4.5 * u);
 
-	/* Make sure we have a range of at least 50 lbs */
-	this.max = Math.max(this.max, this.min + 50);
+	/*
+		Make sure we have a range of at least 50 lbs (22.5 kg)
+	*/
+	this.max = Math.max(this.max, this.min + (22.5 * u));
 
-	/* The default view should make the most recent entry visible */
-	if (weights.count() && this.selected < weights.count()) {
-		this.scrollOffset = this.getX(weights.d(this.selected)) - (w * 0.7);
-	}
+	/* Default to today */
+	this.scrollOffset = 0;
+	this.scrollOffset = this.getX(new Date()) - (w * 0.7);
 
 	this.render(true);
 },
@@ -339,12 +363,12 @@ handleCommand: function(event)
 			break;
 
 		case 'today':
-			if (weights.count()) {
-				this.scrollOffset = this.getX(weights.d[this.selected]) - (w * 0.7);
-			} else {
-				this.scrollOffset = 0;
-			}
-			render();
+			var w	= parseInt(this.controller.window.innerWidth);
+
+			this.scrollOffset = this.getX(new Date()) - (w * 0.7);
+Mojo.log('Today is now: ' + this.scrollOffset);
+
+			this.render();
 			break;
 
 		case 'week':
@@ -407,7 +431,6 @@ render: function(full)
 		labels.style.width	= w + 'px'; labels.width	= w;
 		labels.style.height	= h + 'px'; labels.height	= h;
 
-
 		/*
 			Draw the labels and grid lines for weights and BMI values
 
@@ -416,10 +439,7 @@ render: function(full)
 			orientation.  The labels are drawn on a canvas on top of the chart
 			and the lines on a canvas below it.
 
-			The lines are spaced at 10 lb intervals, and if possible the
-			labels should be as well.  If the scale is large enough then
-			this won't make sense though, so the interval will need to
-			be larger.
+			Space the lines at the smallest interval that makes sense.
 
 			Use this.ctx for the grid so that we can use this.drawHorizLine() to
 			draw the lines.
@@ -451,15 +471,25 @@ render: function(full)
 		c.translate(0, h);
 		this.ctx.translate(0, h);
 
-
-		var i = ((this.max - this.min) / (13 - 3));
-		i = Math.floor(i / 10) * 10;
-		if (i < 10) i = 10;
+		var i;
+		if ((this.max - this.min) <= 15) {
+			i = 0.5;
+		} else if ((this.max - this.min) <= 30) {
+			i = 1;
+		} else if ((this.max - this.min <= 60)) {
+			i = 2;
+		} else if ((this.max - this.min <= 150)) {
+			i = 5;
+		} else {
+			var i = ((this.max - this.min) / (13 - 3));
+			i = Math.floor(i / 10) * 10;
+			if (i < 10) i = 10;
+		}
 
 		var y = Math.floor(this.getWeight(0));
 		y = y - (y % i) + i;
 
-		for (;; y += 10) {
+		for (;; y += i) {
 			var yo = this.getY(y);
 
 			if (isNaN(yo) || (yo - 7) <= -(h - 16)) {
@@ -468,10 +498,14 @@ render: function(full)
 
 			/* Draw a label */
 			if (0 == (y % i)) {
-				c.fillText("" + y, 16, yo + 5);
+				if (i >= 1) {
+					c.fillText("" + y, 16, yo + 5);
+				} else {
+					c.fillText(this.NumToStr(y), 16, yo + 5);
+				}
 
 				if (!isNaN(this.p.height)) {
-					c.fillText(this.NumToStr(this.LBtoBMI(y, this.p.height)),
+					c.fillText(this.NumToStr(this.getBMI(y)),
 						w - 16, yo + 5);
 				}
 			}
@@ -524,9 +558,9 @@ render: function(full)
 
 
 	/* Draw the "Target" line */
-	this.drawHorizLine(this.getY(this.p.target), 'rgba(199, 121,  39, 1)');
-	this.showHint("TARGET (" + this.p.target + ")",
-		48, this.getY(this.p.target) - 2,
+	this.drawHorizLine(this.getY(this.target), 'rgba(199, 121,  39, 1)');
+	this.showHint("TARGET (" + this.target + ")",
+		48, this.getY(this.target) - 2,
 		'rgba(255, 255, 255, 1)',
 		'rgba(199, 121,  39, 1)');
 
@@ -782,9 +816,32 @@ KGtoBMI: function(kgs, meters)
 	return(kgs / (meters * meters));
 },
 
-LBtoBMI: function(lbs, inches)
+getBMI: function(weight)
 {
-	return((lbs * 703) / (inches * inches));
+	if (isNaN(this.p.height)) {
+		return(NaN);
+	}
+
+	/*
+		The weight being passed in will always be in the user's prefered unit,
+		but this.p.height is always in metric.
+
+		      mass (kg)
+		BMI = ---------
+		      (height(m))^2
+	*/
+	var u;
+	switch (this.p.units) {
+		default:
+		case 'US':			u = skinnyr.lb;		break;
+		case 'metric':		u = skinnyr.kg;		break;
+		case 'imperial':	u = skinnyr.stone;	break;
+	}
+
+	var kg	= weight / u;
+	var m	= this.p.height / 100;
+
+	return(kg / (m * m));
 },
 
 
@@ -813,6 +870,10 @@ getWeight: function(y)
 /* Return the X offset on the graph based on a specific date */
 getX: function(date)
 {
+	if (!date) {
+		return(0);
+	}
+
 	var start		= (weights.d(0) || new Date()).getTime();
 	var end			= date.getTime();
 	var w			= parseInt(this.controller.window.innerWidth);
