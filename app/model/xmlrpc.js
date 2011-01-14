@@ -134,21 +134,29 @@ xmlrpc.writeParam = function(param) {
             } else if (param.constructor == Date) {
                 out = "<dateTime.iso8601>";
                 out += param.getUTCFullYear();
-                if (param.getUTCMonth() < 10)
-                    out += "0";
-                out += param.getUTCMonth();
+
+				var m = (param.getUTCMonth() + 1);
+				if (m < 10) {
+					out += "0";
+				}
+				out += m;
+
                 if (param.getUTCDate() < 10)
                     out += "0";
                 out += param.getUTCDate() + "T";
+
                 if (param.getUTCHours() < 10)
                     out += "0";
                 out += param.getUTCHours() + ":";
+
                 if (param.getUTCMinutes() < 10)
                     out += "0";
                 out += param.getUTCMinutes() + ":";
+
                 if (param.getUTCSeconds() < 10)
                     out += "0";
                 out += param.getUTCSeconds();
+
                 out += "</dateTime.iso8601>";
                 return out;
             } else { /* struct */
