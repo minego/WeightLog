@@ -161,7 +161,8 @@ w: function(offset)
 		case 'imperial':	u = skinnyr.stone;	break;
 	}
 
-	return(u * weights.data[offset][skinnyr.weight]);
+	var w = (u * weights.data[offset][skinnyr.weight]);
+	return(Math.round(w * 10) / 10);
 },
 
 /*

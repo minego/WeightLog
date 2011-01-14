@@ -20,8 +20,6 @@
 
 // TODO Should year be hidden??
 
-// TODO Adjust the labels based on the selected units
-
 // TODO Update the BMI calculation to work with the selected units  (remember
 //		that weights.w() will return a value in the user's selected unit...
 
@@ -58,6 +56,7 @@ setup: function()
 		this.tap.bindAsEventListener(this), true);
 
 
+	// TODO Add shortcut keys...
 	/* Setup the app menu */
 	this.controller.setupWidget(Mojo.Menu.appMenu,
 		{ omitDefaultItems: true },
@@ -474,9 +473,17 @@ render: function(full)
 			this.drawHorizLine(this.getY(y) + 1, 'rgba(81, 86, 91, 1)');
 		}
 
+		var u;
+		switch (this.p.units) {
+			default:
+			case 'US':			u = 'lbs';	break;
+			case 'metric':		u = 'kg';	break;
+			case 'imperial':	u = 'st';	break;
+		}
+
 		c.fillStyle	= 'rgba(255, 255, 255, 0.4)';
-		c.fillText("LBs", 16,     -(h - 16));
-		c.fillText("BMI", w - 16, -(h - 16));
+		c.fillText(u,		16,     -(h - 16));
+		c.fillText('BMI',	w - 16, -(h - 16));
 
 		c.restore();
 		this.ctx.restore();

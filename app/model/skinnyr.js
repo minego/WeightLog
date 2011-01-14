@@ -19,11 +19,12 @@ var skinnyr = {
 	All values are stored in metric.  Multiply by one of the following to
 	convert from metric.
 */
-lb:			0.45359237,
-stone:		6.35029318,
+
+lb:			2.20462262,
+stone:		0.157473044,
 kg:			1.0,
 
-inch:		2.54,
+inch:		0.3937007874015748,
 cm:			1.0,
 
 /* The following field names are used for weight records on skinnyr */

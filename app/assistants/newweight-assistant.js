@@ -38,7 +38,7 @@ setup: function()
 		autoFocus:			true,
 		modifierState:		Mojo.Widget.numLock,
 		maxLength:			5,
-		changeOnKeyPress:	false,
+		changeOnKeyPress:	true,
 		charsAllow:			function(c)
 		{
 			/* Allow deleteKey for use with the emulator */
@@ -54,6 +54,8 @@ setup: function()
 		}
 	}, this);
 
+	this.controller.listen('weight', Mojo.Event.propertyChange, this.change.bind(this));
+
 	this.date = weights.d(this.selected) || new Date();
 	this.controller.setupWidget('date', {
 		label:				$L('Date'),
@@ -65,14 +67,14 @@ setup: function()
 	}, this);
 
 
-	// TODO Disable the save button if the user hasn't entered a valid weight..
-
 	this.controller.setupWidget('save', {
 		type:			Mojo.Widget.activityButton,
 		buttonClass:	'primary'
-	}, {
-		buttonLabel:	$L('Save')
+	}, this.savemodel = {
+		buttonLabel:	$L('Save'),
+		disabled:		true
 	}, this);
+	this.change();
 
 	this.controller.setupWidget('close', {
 		type:			Mojo.Widget.button,
@@ -85,6 +87,17 @@ setup: function()
 		this.save.bindAsEventListener(this));
 	this.controller.listen(this.controller.get('close'), Mojo.Event.tap,
 		this.close.bindAsEventListener(this));
+},
+
+change: function()
+{
+	if (this.weight.length == 0 || isNaN(this.weight * 1)) {
+		this.savemodel.disabled = true;
+	} else {
+		this.savemodel.disabled = false;
+	}
+
+	this.controller.modelChanged(this.savemodel);
 },
 
 cleanup: function()
@@ -100,9 +113,9 @@ save: function()
 	this.controller.get('save').mojo.activate();
 
 	if (isNaN(this.selected)) {
-		weights.add(parseInt(this.weight), this.date);
+		weights.add(				this.weight * 1, this.date);
 	} else {
-		weights.set(this.selected, parseInt(this.weight), this.date);
+		weights.set(this.selected,	this.weight * 1, this.date);
 	}
 
 	weights.sync(function(worked) {
