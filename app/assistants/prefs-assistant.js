@@ -14,14 +14,6 @@
 	ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-// TODO	The target weight needs to be stored in metric and converted on the fly
-//		to the correct unit for display...
-
-// TODO	Height needs to be stored in metric and the list needs to be updated
-//		based on the unit selected
-
-// TODO If height isn't set don't display the BMI scale
-
 var PrefsAssistant = Class.create({
 
 initialize: function(prefs)
@@ -39,21 +31,6 @@ setup: function()
 		this.p = new Preferences('weightlog');
 	}
 
-	// TODO This needs to work in inches or cm...
-	var inches = [];
-	for (var i = (7 * 12); i > (2 * 12); i--) {
-		inches[inches.length] = {
-			label: "" + Math.floor(i / 12) + "' " + (i % 12) + '"',
-			value: i
-		};
-	}
-
-    this.controller.setupWidget('height', {
-		label:			$L('Your height'),
-		modelProperty:	'height',
-		choices:		inches
-	}, this.p);
-
     this.controller.setupWidget('units', {
 		disabled:		true,
 		label:			$L('Units'),
@@ -65,10 +42,8 @@ setup: function()
 		]
 	}, this.p);
 
-	this.target = "";
-	if (this.p.target > 0) {
-		this.target += this.p.target;
-	}
+	/* Load the unit specific values */
+	this.loadValues();
 
 	this.controller.setupWidget('target', {
 		modelProperty:		'target',
@@ -92,14 +67,37 @@ setup: function()
 		}
 	}, this);
 
+	this.controller.setupWidget('height', {
+		modelProperty:		'height',
+		autoFocus:			false,
+		modifierState:		Mojo.Widget.numLock,
+		maxLength:			5,
+		changeOnKeyPress:	false,
+		label:				$L('Height'),
+		charsAllow:			function(c)
+		{
+			/* Allow deleteKey for use with the emulator */
+			if (c == Mojo.Char.period || c == Mojo.Char.deleteKey) {
+				return(true);
+			}
+
+			if (c >= Mojo.Char.asciiZero && c <= Mojo.Char.asciiNine) {
+				return(true);
+			}
+
+			return(false);
+		}
+	}, this);
+
+
+
 	this.controller.listen('target',	Mojo.Event.propertyChange, this.change.bind(this));
 	this.controller.listen('height',	Mojo.Event.propertyChange, this.change.bind(this));
-	this.controller.listen('units',		Mojo.Event.propertyChange, this.change.bind(this));
 
-	this.accounts = {
-		listTitle:		$L('Accounts'),
-		items:			[]
-	};
+	this.controller.listen('units',		Mojo.Event.propertyChange, this.changeUnits.bind(this));
+
+
+	this.updateAccounts();
 
 	this.controller.setupWidget('accounts', {
 		itemTemplate:	'prefs/account-item',
@@ -122,10 +120,7 @@ setup: function()
 	this.controller.setupWidget('add', {
 		type:			Mojo.Widget.add,
 		buttonClass:	'primary'
-	}, this.addmodel = {
-		disabled:		false,
-		buttonLabel:	$L('Add an Account')
-	});
+	}, this.addmodel);
 	this.controller.listen(this.controller.get('add'), Mojo.Event.tap,
 		this.add.bindAsEventListener(this));
 
@@ -140,7 +135,8 @@ cleanup: function()
 {
 	this.controller.stopListening('target',	Mojo.Event.propertyChange, this.change.bind(this));
 	this.controller.stopListening('height',	Mojo.Event.propertyChange, this.change.bind(this));
-	this.controller.stopListening('units',	Mojo.Event.propertyChange, this.change.bind(this));
+
+	this.controller.stopListening('units',	Mojo.Event.propertyChange, this.changeUnits.bind(this));
 
 	this.controller.stopListening(this.controller.get('accounts'), Mojo.Event.listTap,
 		this.accountTap.bindAsEventListener(this));
@@ -168,21 +164,101 @@ activate: function()
 	} else {
 		this.lastweight = 0;
 	}
-
-	this.updateAccounts();
 },
 
 change: function()
 {
-	this.p.target = this.target * 1;
-	if (isNaN(this.p.target)) {
-		this.p.target	= 0;
-		this.target		= "";
-	}
-    this.p.save();
+	var v;
+	var u;
 
-	if (this.p.units) {
-		weights.setUnits(this.p.units);
+	/* Save all values in metric */
+	if (isNaN((v = (this.target * 1)))) {
+		this.target		= "";
+		this.p.target	= NaN;
+	} else {
+		switch (this.p.units) {
+			default:
+			case 'US':			u = skinnyr.lb;		break;
+			case 'metric':		u = skinnyr.kg;		break;
+			case 'imperial':	u = skinnyr.stone;	break;
+		}
+
+		this.p.target	= (v / u);
+	}
+
+	if (isNaN((v = (this.height * 1)))) {
+		this.height		= "";
+		this.p.height	= NaN;
+	} else {
+		switch (this.p.units) {
+			default:
+			case 'US':
+			case 'imperial':	u = skinnyr.inch;	break;
+			case 'metric':		u = skinnyr.cm;		break;
+		}
+
+		this.p.height	= (v / u);
+	}
+
+    this.p.save();
+},
+
+changeUnits: function()
+{
+	this.p.save();
+
+	this.loadValues();
+	this.controller.modelChanged(this);
+},
+
+loadValues: function()
+{
+	var u;
+
+	/* Load all values in the user's unit of choice */
+	this.target		= "";
+	this.height		= "";
+
+	weights.setUnits(this.p.units);
+
+	if (!isNaN(this.p.target)) {
+		switch (this.p.units) {
+			default:
+			case 'US':			u = skinnyr.lb;		break;
+			case 'metric':		u = skinnyr.kg;		break;
+			case 'imperial':	u = skinnyr.stone;	break;
+		}
+
+		this.target += (Math.round(this.p.target * u * 10) / 10);
+
+		switch (this.p.units) {
+			default:
+			case 'US':			u = 'lbs';			break;
+			case 'metric':		u = 'kg';			break;
+			case 'imperial':	u = 'stone';		break;
+		}
+
+		this.controller.get('targetunit').innerHTML = u;
+	}
+
+	if (!isNaN(this.p.height)) {
+		switch (this.p.units) {
+			default:
+			case 'US':
+			case 'imperial':	u = skinnyr.inch;	break;
+			case 'metric':		u = skinnyr.cm;		break;
+		}
+
+		this.height += Math.round(this.p.height * u);
+
+		switch (this.p.units) {
+			default:
+			case 'US':
+			case 'imperial':	u = 'inches';		break;
+			case 'metric':		u = 'cm';			break;
+		}
+
+		this.controller.get('heightunit').innerHTML = u;
 	}
 },
 
@@ -228,6 +304,25 @@ accountTap: function(event)
 
 updateAccounts: function()
 {
+	var setup;
+
+	if (this.accounts) {
+		setup = false;
+	} else {
+		setup = true;
+
+		this.accounts = {
+			listTitle:		$L('Accounts'),
+			items:			[]
+		};
+	}
+
+	if (!this.addmodel) {
+		this.addmodel = {
+			buttonLabel:	$L('Add an Account')
+		};
+	}
+
 	this.addmodel.disabled	= false;
 	this.accounts.items		= [];
 
@@ -241,8 +336,10 @@ updateAccounts: function()
 		this.addmodel.disabled = true;
 	}
 
-	this.controller.modelChanged(this.accounts);
-	this.controller.modelChanged(this.addmodel);
+	if (!setup) {
+		this.controller.modelChanged(this.accounts);
+		this.controller.modelChanged(this.addmodel);
+	}
 },
 
 add: function()
