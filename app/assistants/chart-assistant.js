@@ -26,6 +26,8 @@ var ChartAssistant = Class.create({
 
 setup: function()
 {
+	var w = parseInt(this.controller.window.innerWidth);
+
 	if (!this.p) {
 		this.p = new Preferences('weightlog');
 	}
@@ -128,7 +130,6 @@ setup: function()
 	this.min			= 0;
 	this.max			= 0;
 
-	this.scrollOffset	= 0;
 	this.topMargin		= 45;
 	this.bottomMargin	= 50;
 
@@ -149,6 +150,10 @@ setup: function()
 			this.daycount		= 356;
 			break;
 	}
+
+	/* Default to today (Set it to 0 first, because getX uses it) */
+	this.scrollOffset	= 0;
+	this.scrollOffset	= this.getX(new Date()) - (w * 0.7);
 
 	/* Now we need data */
 	if (!weights.loaded) {
@@ -173,7 +178,6 @@ ready: function()
 
 activate: function()
 {
-	var w = parseInt(this.controller.window.innerWidth);
 	var u;
 	switch (this.p.units) {
 		default:
@@ -231,9 +235,6 @@ activate: function()
 	*/
 	this.max = Math.max(this.max, this.min + (22.5 * u));
 
-	/* Default to today */
-	this.scrollOffset = 0;
-	this.scrollOffset = this.getX(new Date()) - (w * 0.7);
 
 	this.render(true);
 },
@@ -366,7 +367,6 @@ handleCommand: function(event)
 			var w	= parseInt(this.controller.window.innerWidth);
 
 			this.scrollOffset = this.getX(new Date()) - (w * 0.7);
-Mojo.log('Today is now: ' + this.scrollOffset);
 
 			this.render();
 			break;
