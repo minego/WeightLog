@@ -297,8 +297,10 @@ handleCommand: function(event)
 		case 'about':
 			var msg = [
 				$L('Copyright 2010-2011, Micah N Gorrell.\n'),
-				$L('Icon icopyright: Chris Wallace.'),
-				$L('www.chris-wallace.com/2009/10/18/monday-freebie-vector-scale-icon/')
+
+				'Scale Icon by Chris Wallace is licensed under a Creative',
+				'Commons Attribution 3.0 United States License.',
+				'Based on a work at www.chris-wallace.com.'
 			].join('  \n');
 
 			 this.controller.showAlertDialog({
@@ -432,8 +434,11 @@ render: function(full)
 		c.save();
 
 		c.fillStyle	= 'rgba(0, 0, 0, 0.7)';
-		c.fillRect(0,		0, 32, h);
-		c.fillRect(w - 32,	0, 32, h);
+		c.fillRect(0, 0, 32, h);
+
+		if (!isNaN(this.p.height)) {
+			c.fillRect(w - 32,	0, 32, h);
+		}
 
 		c.fillStyle	= 'rgba(255, 255, 255, 1.0)';
 		c.font		= 'bold 13px sans-serif';
@@ -464,8 +469,11 @@ render: function(full)
 			/* Draw a label */
 			if (0 == (y % i)) {
 				c.fillText("" + y, 16, yo + 5);
-				c.fillText(this.NumToStr(this.LBtoBMI(y, this.p.height)),
-					w - 16, yo + 5);
+
+				if (!isNaN(this.p.height)) {
+					c.fillText(this.NumToStr(this.LBtoBMI(y, this.p.height)),
+						w - 16, yo + 5);
+				}
 			}
 
 			/* Draw the grid line */
@@ -482,8 +490,11 @@ render: function(full)
 		}
 
 		c.fillStyle	= 'rgba(255, 255, 255, 0.4)';
-		c.fillText(u,		16,     -(h - 16));
-		c.fillText('BMI',	w - 16, -(h - 16));
+		c.fillText(u, 16, -(h - 16));
+
+		if (!isNaN(this.p.height)) {
+			c.fillText('BMI', w - 16, -(h - 16));
+		}
 
 		c.restore();
 		this.ctx.restore();

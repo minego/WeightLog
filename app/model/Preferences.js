@@ -84,10 +84,10 @@ Preferences.prototype.save = function()
 
 Preferences.prototype.reset = function()
 {
-	this.height		= (5 * 12) + 6;
+	this.height		= NaN;
+	this.target		= NaN;
 	this.units		= 'US';
 	this.scale		= 'week';
-	this.target		= NaN;
 
 	this.skinnyr	= { };
 };

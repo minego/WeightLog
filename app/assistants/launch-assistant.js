@@ -346,7 +346,7 @@ handleCommand: function(event)
 
 			var msg = [
 				$L('Copyright 2010-2011, Micah N Gorrell.\n'),
-				$L('Icon icopyright: Chris Wallace.'),
+				$L('Icon copyright: Chris Wallace.'),
 				$L('www.chris-wallace.com/2009/10/18/monday-freebie-vector-scale-icon/')
 			].join('  \n');
 
