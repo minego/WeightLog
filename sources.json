@@ -2,6 +2,7 @@
 	{							"source": "app/assistants/app-assistant.js"			},
 	{ "scenes": "chart",		"source": "app/assistants/chart-assistant.js"		},
 	{ "scenes": "launch",		"source": "app/assistants/launch-assistant.js"		},
+	{ "scenes": "prefs",		"source": "app/assistants/prefs-assistant.js"		},
 
 	{ "scenes": "newweight",	"source": "app/assistants/newweight-assistant.js"	},
 	{							"source": "app/assistants/newweight-assistant.js"	},

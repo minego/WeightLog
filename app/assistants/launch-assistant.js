@@ -16,15 +16,7 @@
 
 var LaunchAssistant = Class.create({
 
-// TODO	The target weight needs to be stored in metric and converted on the fly
-//		to the correct unit for display...
-
-// TODO	Height needs to be stored in metric and the list needs to be updated
-//		based on the unit selected
-
-// TODO Test the skinnyr integration
-
-// TODO	Convert the "new weight" dialog into a scene again?  ugg
+// TODO Test the skinnyr integration...
 
 setup: function()
 {
@@ -35,15 +27,16 @@ setup: function()
 	}
 
 	if (!weights.loaded) {
-		weights.load(this.p.authtoken, function() {
+		weights.load(this.p.skinnyr.authtoken, function() {
 			this.activate();
 		}.bind(this));
 	}
 
-	// TODO Add a 'login' menu item
-	// TODO Add a 'logout' menu item
-	// TODO Add a 'refresh' menu item
+	// TODO Do we really need the launch page any more???
+
 	// TODO	Write some help pages...
+
+	// TODO Update the menu on the chart screen...
 
 	this.controller.setupWidget(Mojo.Menu.appMenu,
 		{ omitDefaultItems: true },
@@ -52,11 +45,11 @@ setup: function()
 			items: [
 				Mojo.Menu.editItem,
 				{
-					command:		'login',
-					label:			$L('Login to skinnyr')
+					command:		'prefs',
+					label:			$L('Preferences & Accounts')
 				}, {
 					command:		'reset',
-					label:			$L('Reset all data')
+					label:			$L('Remove all data')
 				}, {
 					command:		'newrecord',
 					label:			$L('Enter current weight')
@@ -68,31 +61,6 @@ setup: function()
 			]
 		}
 	);
-
-	var inches = [];
-	for (var i = (7 * 12); i > (2 * 12); i--) {
-		inches[inches.length] = {
-			label: "" + Math.floor(i / 12) + "' " + (i % 12) + '"',
-			value: i
-		};
-	}
-
-    this.controller.setupWidget('height', {
-		label:			$L('Your height'),
-		modelProperty:	'height',
-		choices:		inches
-	}, this.p);
-
-    this.controller.setupWidget('units', {
-		disabled:		true,
-		label:			$L('Units'),
-		modelProperty:	'units',
-		choices:		[
-			{ label: $L('U.S. (lb and inches'),			value: 'US'			},
-			{ label: $L('Metric (kg and cm)'),			value: 'metric'		},
-			{ label: $L('Imperial (stone and inches)'),	value: 'imperial'	}
-		]
-	}, this.p);
 
 	this.controller.setupWidget('newweight', {
 		type:			Mojo.Widget.button,
@@ -113,38 +81,6 @@ setup: function()
 	this.controller.listen(this.controller.get('history'), Mojo.Event.tap,
 		this.history.bindAsEventListener(this));
 
-
-	this.target = "";
-	if (this.p.target > 0) {
-		this.target += this.p.target;
-	}
-
-	this.controller.setupWidget('target', {
-		modelProperty:		'target',
-		autoFocus:			false,
-		modifierState:		Mojo.Widget.numLock,
-		maxLength:			5,
-		changeOnKeyPress:	false,
-		label:				$L('Target Weight'),
-		charsAllow:			function(c)
-		{
-			/* Allow deleteKey for use with the emulator */
-			if (c == Mojo.Char.period || c == Mojo.Char.deleteKey) {
-				return(true);
-			}
-
-			if (c >= Mojo.Char.asciiZero && c <= Mojo.Char.asciiNine) {
-				return(true);
-			}
-
-			return(false);
-		}
-	}, this);
-
-	this.controller.listen('target',	Mojo.Event.propertyChange, this.change.bind(this));
-	this.controller.listen('height',	Mojo.Event.propertyChange, this.change.bind(this));
-	this.controller.listen('units',		Mojo.Event.propertyChange, this.change.bind(this));
-
 	this.activate();
 },
 
@@ -154,10 +90,6 @@ ready: function()
 
 cleanup: function()
 {
-	this.controller.stopListening('target',	Mojo.Event.propertyChange, this.change.bind(this));
-	this.controller.stopListening('height',	Mojo.Event.propertyChange, this.change.bind(this));
-	this.controller.stopListening('units',	Mojo.Event.propertyChange, this.change.bind(this));
-
 	this.controller.stopListening(this.controller.get('history'), Mojo.Event.tap,
 		this.history.bindAsEventListener(this));
 },
@@ -170,10 +102,6 @@ activate: function()
 		this.p.load();
 	}
 
-	if (this.p.units) {
-		weights.setUnits(this.p.units);
-	}
-
 	if (weights.count()) {
 		this.lastweight = weights.w(weights.count() - 1);
 	} else {
@@ -181,15 +109,6 @@ activate: function()
 	}
 
 	this.renderLED(this.lastweight);
-},
-
-change: function()
-{
-	this.p.target = this.target * 1;
-	if (isNaN(this.p.target)) {
-		this.p.target = 0;
-	}
-    this.p.save();
 },
 
 history: function()
@@ -382,11 +301,7 @@ handleCommand: function(event)
 				break;
 
 			case Mojo.Event.commandEnable:
-				/*
-					This app does not enable or disable any menu items, so
-					all commands are enabled.
-				*/
-				event.stopPropagation();
+				cmd = event.command;
 				return;
 
 			default:
@@ -395,6 +310,11 @@ handleCommand: function(event)
 	}
 
 	switch (cmd) {
+		case 'prefs':
+			this.controller.stageController.pushScene('prefs', this.p);
+			break;
+
+		// TODO Remove the account related stuff... it goes in prefs
 		case 'login':
 			this.controller.showDialog({
 				assistant:		new LoginAssistant(this.p, this.controller),
@@ -423,7 +343,20 @@ handleCommand: function(event)
 		case 'about':
 			// TODO Create an about page.  It has to give credit for the icon
 			// (see http://www.chris-wallace.com/2009/10/18/monday-freebie-vector-scale-icon/ )
-			this.controller.stageController.pushScene('about');
+
+			var msg = [
+				$L('Copyright 2010-2011, Micah N Gorrell.\n'),
+				$L('Icon icopyright: Chris Wallace.'),
+				$L('www.chris-wallace.com/2009/10/18/monday-freebie-vector-scale-icon/')
+			].join('  \n');
+
+			 this.controller.showAlertDialog({
+				title:		$L("Weight Log"),
+				message:	msg,
+
+				onChoose:	function(value) {},
+				choices:	[{ label: $L("OK"), value:"" }]
+			});
 			break;
 
 		case 'newrecord':

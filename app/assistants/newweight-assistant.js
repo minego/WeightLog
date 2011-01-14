@@ -16,10 +16,8 @@
 
 var NewweightAssistant = Class.create({
 
-initialize: function(controller, prefs, selected)
+initialize: function(prefs, selected)
 {
-	this.controller	= controller;
-
 	this.p			= prefs;
 	this.selected	= selected;
 
@@ -28,15 +26,13 @@ initialize: function(controller, prefs, selected)
 	}
 },
 
-setup: function(widget)
+setup: function()
 {
-	this.widget = widget;
-
+	this.weight = "";
 	if (!isNaN(this.selected) && !isNaN(weights.w(this.selected))) {
 		this.weight += weights.w(this.selected);
 	}
 
-	this.weight = "";
 	this.controller.setupWidget('weight', {
 		modelProperty:		'weight',
 		autoFocus:			true,
@@ -115,34 +111,26 @@ save: function()
 		this.controller.get('save').mojo.deactivate();
 
 		if (worked) {
-			if (this.widget) {
-				this.widget.mojo.close();
-			} else {
-				this.controller.stageController.popScene();
-			}
+			this.controller.stageController.popScene();
 		} else {
-			this.controller.get('message').innerHTML = $L("Could not save new weight");
+			if (this.p.skinnyr.authtoken) {
+				Mojo.Controller.errorDialog($L('Could not add weight to skinnyr account.'));
+			} else {
+				Mojo.Controller.errorDialog($L('Could not add weight.'));
+			}
 		}
 	}.bind(this));
 },
 
 close: function() {
-	if (this.widget) {
-		this.widget.mojo.close();
-	} else {
-		this.controller.stageController.popScene();
-	}
+	this.controller.stageController.popScene();
 },
 
 NhandleCommand: function(event)
 {
 	event.stop();
 
-	if (this.widget) {
-		this.widget.mojo.close();
-	} else {
-		this.controller.stageController.popScene();
-	}
+	this.controller.stageController.popScene();
 }
 
 });

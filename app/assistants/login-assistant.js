@@ -16,9 +16,11 @@
 
 var LoginAssistant = Class.create({
 
-initialize: function(prefs, controller)
+/* If a callback is provided then it will be called after a successful login */
+initialize: function(prefs, controller, cb)
 {
-	this.p = prefs;
+	this.p	= prefs;
+	this.cb	= cb;
 
 	if (controller) {
 		this.controller = controller;
@@ -33,7 +35,8 @@ setup: function(widget)
 	this.controller.setupWidget('user', {
 		modelProperty:		'user',
 		autoFocus:			true,
-		changeOnKeyPress:	false
+		changeOnKeyPress:	false,
+		textCase:			Mojo.Widget.steModeLowerCase
 	}, this);
 
 	this.pass	= "";
@@ -66,7 +69,7 @@ setup: function(widget)
 		type:			Mojo.Widget.button,
 		buttonClass:	'primary'
 	}, {
-		buttonLabel:	$L('Get an account on skinnyr')
+		buttonLabel:	$L('Create skinnyr Account')
 	}, this);
 
 
@@ -96,7 +99,8 @@ login: function()
 
 	skinnyr.login(this.user, this.pass,
 		function(token) {
-			this.p.authtoken = token;
+			this.p.skinnyr.authtoken	= token;
+			this.p.skinnyr.user			= this.user;
 			this.p.save();
 
 			weights.sync(function(worked) {
@@ -108,6 +112,7 @@ login: function()
 					} else {
 						this.controller.stageController.popScene();
 					}
+					this.cb();
 				} else {
 					this.controller.get('message').innerHTML = $L("Could not sync with skinnyr.com");
 				}
@@ -133,7 +138,15 @@ close: function() {
 },
 
 skinnyr: function() {
-	// TODO Make this actually go to www.skinnyr.com
+	this.controller.serviceRequest('palm://com.palm.applicationManager', {
+		method:			"open",
+		parameters: {
+			id:			'com.palm.app.browser',
+			params: {
+				target:	'http://www.skinnyr.com'
+			}
+		}
+	});
 },
 
 handleCommand: function(event)

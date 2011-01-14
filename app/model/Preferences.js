@@ -56,18 +56,22 @@ Preferences.prototype.load = function()
 
 	this.units		= prefs['units']	|| this.units;
 	this.scale		= prefs['scale']	|| this.scale;
-	this.authtoken	= prefs['authtoken']|| this.authtoken;
+
+	this.skinnyr	= prefs['skinnyr']	|| this.skinnyr;
 };
 
 Preferences.prototype.dump = function()
 {
 	var dump = {
-		'height':	this.height,
-		'unit':		this.unit,
-		'scale':	this.scale,
-		'authtoken':this.authtoken,
+		'height':			this.height,
+		'unit':				this.unit,
+		'scale':			this.scale,
+		'target':			this.target,
 
-		'target':	this.target
+		'skinnyr': {
+			'authtoken':	this.skinnyr.authtoken,
+			'user':			this.skinnyr.user
+		}
 	};
 
 	return(dump);
@@ -83,7 +87,8 @@ Preferences.prototype.reset = function()
 	this.height		= (5 * 12) + 6;
 	this.units		= 'US';
 	this.scale		= 'week';
-	this.authtoken	= null;
 	this.target		= NaN;
+
+	this.skinnyr	= { };
 };
 
