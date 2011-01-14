@@ -40,16 +40,31 @@ setup: function()
 		}.bind(this));
 	}
 
-	// TODO: Add a 'login' menu item
-	// TODO: Add a 'logout' menu item
-	// TODO: Add a 'refresh' menu item
+	// TODO Add a 'login' menu item
+	// TODO Add a 'logout' menu item
+	// TODO Add a 'refresh' menu item
+	// TODO	Write some help pages...
+
 	this.controller.setupWidget(Mojo.Menu.appMenu,
 		{ omitDefaultItems: true },
 		this.menu = {
 			visible:		true,
 			items: [
 				Mojo.Menu.editItem,
-				{ label: $L('Reset all data'), command: 'reset' }
+				{
+					command:		'login',
+					label:			$L('Login to skinnyr')
+				}, {
+					command:		'reset',
+					label:			$L('Reset all data')
+				}, {
+					command:		'newrecord',
+					label:			$L('Enter current weight')
+				}, {
+					command:		'about',
+					label:			$L('About')
+				},
+				Mojo.Menu.helpItem
 			]
 		}
 	);
@@ -379,8 +394,20 @@ handleCommand: function(event)
 		}
 	}
 
-	// TODO: Setup the menu
 	switch (cmd) {
+		case 'login':
+			this.controller.showDialog({
+				assistant:		new LoginAssistant(this.p, this.controller),
+				template:		'login/login-scene',
+
+				preventCancel:	false,
+
+				title:			$L('Login'),
+				actionBtnTitle:	$L('Login')
+			});
+
+			break;
+
 		case 'reset':
 			while (weights.count()) {
 				weights.del(0);

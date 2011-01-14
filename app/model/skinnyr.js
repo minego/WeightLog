@@ -97,7 +97,7 @@ add: function(token, weight, date, success, failure)
 	var		failed		= false;
 
 	xmlrpc('http://www.skinnyr.com/api2', 'createWeight', [
-		token, weight, date
+		token, weight, date, ""
 	], function(id) {
 		succeeded = true;
 		success(id);

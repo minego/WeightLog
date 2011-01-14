@@ -16,8 +16,10 @@
 
 var NewweightAssistant = Class.create({
 
-initialize: function(prefs, selected)
+initialize: function(controller, prefs, selected)
 {
+	this.controller	= controller;
+
 	this.p			= prefs;
 	this.selected	= selected;
 
@@ -26,21 +28,21 @@ initialize: function(prefs, selected)
 	}
 },
 
-setup: function()
+setup: function(widget)
 {
-	this.weight = "";
+	this.widget = widget;
 
 	if (!isNaN(this.selected) && !isNaN(weights.w(this.selected))) {
 		this.weight += weights.w(this.selected);
 	}
 
+	this.weight = "";
 	this.controller.setupWidget('weight', {
 		modelProperty:		'weight',
 		autoFocus:			true,
 		modifierState:		Mojo.Widget.numLock,
 		maxLength:			5,
 		changeOnKeyPress:	false,
-		label:				$L('Enter New Weight'),
 		charsAllow:			function(c)
 		{
 			/* Allow deleteKey for use with the emulator */
@@ -113,7 +115,11 @@ save: function()
 		this.controller.get('save').mojo.deactivate();
 
 		if (worked) {
-			this.controller.stageController.popScene();
+			if (this.widget) {
+				this.widget.mojo.close();
+			} else {
+				this.controller.stageController.popScene();
+			}
 		} else {
 			this.controller.get('message').innerHTML = $L("Could not save new weight");
 		}
@@ -121,14 +127,22 @@ save: function()
 },
 
 close: function() {
-	this.controller.stageController.popScene();
+	if (this.widget) {
+		this.widget.mojo.close();
+	} else {
+		this.controller.stageController.popScene();
+	}
 },
 
 NhandleCommand: function(event)
 {
 	event.stop();
 
-	this.controller.stageController.popScene();
+	if (this.widget) {
+		this.widget.mojo.close();
+	} else {
+		this.controller.stageController.popScene();
+	}
 }
 
 });
