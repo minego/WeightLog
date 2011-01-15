@@ -14,8 +14,6 @@
 	ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-// TODO Should year be hidden??
-
 // TODO Test the hell out of the skinnyr integration...
 
 var ChartAssistant = Class.create({
@@ -46,28 +44,55 @@ setup: function()
 			items:
 			[
 				{
-					command:		'newrecord',
-					label:			$L('Enter current weight')
+					command:				'new-record',
+					label:					$L('Enter current weight'),
+					shortcut:				'e'
 				}, {
-					label:			$L('Selected Record'),
+					label:					$L('Selected Record'),
+					command:				'selected-record',
 					items: [
 						{
-							command:'editrecord',
-							label:	$L('Modify')
+							command:		'modify-record',
+							label:			$L('Modify'),
+							shortcut:		'm',
+							checkEnabled:	true
 						}, {
-							command:'delrecord',
-							label:	$L('Delete')
+							command:		'delete-record',
+							label:			$L('Delete'),
+							shortcut:		'd',
+							checkEnabled:	true
 						}
 					]
 				}, {
-					command:		'today',
-					label:			$L('Goto Today')
+					label:					$L('Goto'),
+					items: [
+						{
+							command:		'today',
+							label:			$L('Today'),
+							shortcut:		't'
+						}, {
+							command:		'current-record',
+							label:			$L('Selected Record'),
+							shortcut:		'c',
+							checkEnabled:	true
+						}, {
+							command:		'next-record',
+							label:			$L('Next Record'),
+							shortcut:		'n',
+							checkEnabled:	true
+						}, {
+							command:		'prev-record',
+							label:			$L('Previous Record'),
+							shortcut:		'p',
+							checkEnabled:	true
+						}
+					]
 				}, {
-					command:		'prefs',
-					label:			$L('Preferences & Accounts')
+					command:				'prefs',
+					label:					$L('Preferences & Accounts')
 				}, {
-					command:		'about',
-					label:			$L('About')
+					command:				'about',
+					label:					$L('About')
 				},
 				Mojo.Menu.helpItem
 			]
@@ -84,7 +109,7 @@ setup: function()
 			items:
 			[
 				{
-					command:		'newrecord',
+					command:		'new-record',
 					icon:			'new'
 				},
 				{
@@ -115,16 +140,14 @@ setup: function()
 
 		Since this div sits on top of everything else all user interaction is
 		through it, including taps.
+
+		For now set the size to be very large.  It will be adjusted based on the
+		actual data durning render().
 	*/
-	// TODO Adjust the width of dummy based on the records that have been added
-	//		(with a bit of padding for the projection) to make it bounce at the
-	//		other side as well.... This may make it hard to see the projection
-	//		though....
 	this.controller.get('dummy').style.width	= '1000000px';
 	this.controller.get('dummy').style.height	= h	+ 'px';
 
 	this.controller.setupWidget('scroller', { mode: 'horizontal' }, {});
-	// this.controller.get('scroller').mojo.scrollTo(w * 5, 0, false, true);
 
 	this.moved = this.moved.bindAsEventListener(this);
 	this.controller.listen('scroller', 'scroll', this.moved, true);
@@ -171,11 +194,11 @@ setup: function()
 
 ready: function()
 {
-	var w	= parseInt(this.controller.window.innerWidth);
-
-	this.controller.get('scroller').mojo.scrollTo(
-		-(this.getX(new Date()) - (w * 0.7) + this.scrollOffset),
-		0, true, false);
+	/*
+		Scroll to the last record (if there is one).  If not then scroll to
+		today instead.
+	*/
+	this.scrollTo(weights.d(weights.count() - 1) || new Date());
 },
 
 activate: function()
@@ -237,7 +260,6 @@ activate: function()
 	*/
 	this.max = Math.max(this.max, this.min + (22.5 * u));
 
-
 	this.render(true);
 },
 
@@ -298,11 +320,31 @@ handleCommand: function(event)
 				break;
 
 			case Mojo.Event.commandEnable:
-				/*
-					This app does not enable or disable any menu items, so
-					all commands are enabled.
-				*/
-				event.stopPropagation();
+				cmd = event.command;
+
+				switch (cmd) {
+					case 'selected-record':
+					case 'modify-record':
+					case 'delete-record':
+					case 'current-record':
+						if (isNaN(weights.w(this.selected))) {
+							event.preventDefault();
+						}
+						break;
+
+					case 'next-record':
+						if (isNaN(weights.w(this.selected + 1))) {
+							event.preventDefault();
+						}
+						break;
+
+					case 'prev-record':
+						if (isNaN(weights.w(this.selected - 1))) {
+							event.preventDefault();
+						}
+						break;
+				}
+
 				return;
 
 			default:
@@ -338,15 +380,15 @@ handleCommand: function(event)
 			this.controller.stageController.popScene();
 			break;
 
-		case 'newrecord':
+		case 'new-record':
 			this.controller.stageController.pushScene('newweight', this.p, NaN);
 			break;
 
-		case 'editrecord':
+		case 'modify-record':
 			this.controller.stageController.pushScene('newweight', this.p, this.selected);
 			break;
 
-		case 'delrecord':
+		case 'delete-record':
 			weights.del(this.selected);
 
 			weights.sync(function() {
@@ -355,13 +397,19 @@ handleCommand: function(event)
 			break;
 
 		case 'today':
-			var w	= parseInt(this.controller.window.innerWidth);
+			this.scrollTo(new Date());
+			break;
 
-			this.controller.get('scroller').mojo.scrollTo(
-				-(this.getX(new Date()) - (w * 0.7) + this.scrollOffset),
-				0, true, false);
+		case 'next-record':
+			this.scrollTo(weights.d(++this.selected));
+			break;
 
-			this.render();
+		case 'prev-record':
+			this.scrollTo(weights.d(--this.selected));
+			break;
+
+		case 'current-record':
+			this.scrollTo(weights.d(this.selected));
 			break;
 
 		case 'week':
@@ -405,7 +453,6 @@ render: function(full)
 	var h					= parseInt(this.controller.window.innerHeight);
 	var w					= parseInt(this.controller.window.innerWidth);
 	var chart				= this.controller.get('chart');
-
 
 	/* This is used frequently, so save it for ease of use */
 	this.daywidth			= (w / this.daycount);
@@ -604,8 +651,6 @@ render: function(full)
 
 		At least one record is required for each set, and no more than 5.
 	*/
-	// TODO Calculate the rate whenever the data changes, instead of doing it
-	//		on every render.
 	if (projection && weights.count() >= 2) {
 		var samples		= Math.min(5, Math.floor(weights.count() / 2));
 		var a			= { w: 0, d: 0, c: 0 };
@@ -669,7 +714,7 @@ render: function(full)
 	/* The lines are all complete now */
 	this.ctx.restore();
 
-
+	/* Draw the label for the selected item */
 	var d;
 	var c;
 	if ((d = weights.d(this.selected)) && (c = weights.w(this.selected))) {
@@ -684,6 +729,20 @@ render: function(full)
 			'rgba(255, 255, 255, 1)',
 			'rgba( 79, 121, 159, 1)', false);
 	}
+
+	/*
+		Make sure that the dummy scrollable area is large enough to contain all
+		of our data, and a bit extra for the projection line.
+	*/
+	var width = this.scrollOffset;
+
+	if (projection) {
+		width += (w * 2);
+	}
+	width += this.getX(weights.d(weights.count() - 1)) || 0;
+
+	this.controller.get('dummy').style.width = width + 'px';
+
 
 
 	/*
@@ -1003,6 +1062,22 @@ setDayCount: function(daycount)
 	this.scrollOffset	= (days * this.daywidth) - (w / 2);
 
 	this.render();
+},
+
+scrollTo: function(date)
+{
+	var w	= parseInt(this.controller.window.innerWidth);
+
+	if (!date) {
+		return(false);
+	}
+
+	/* The x offset for a mojo scroller needs to be negative...  */
+	this.controller.get('scroller').mojo.scrollTo(
+		-(this.getX(date) - (w * 0.7) + this.scrollOffset), 0, true, false);
+
+	this.render();
+	return(true);
 }
 
 });
