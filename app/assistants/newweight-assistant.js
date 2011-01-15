@@ -50,8 +50,6 @@ setup: function()
 		}
 	}, this);
 
-	this.controller.listen('weight', Mojo.Event.propertyChange, this.change.bind(this));
-
 	this.date = weights.d(this.selected) || new Date();
 	this.controller.setupWidget('date', {
 		label:				$L('Date'),
@@ -79,10 +77,13 @@ setup: function()
 		buttonLabel:	$L('Cancel')
 	}, this);
 
-	this.controller.listen(this.controller.get('save'), Mojo.Event.tap,
-		this.save.bindAsEventListener(this));
-	this.controller.listen(this.controller.get('close'), Mojo.Event.tap,
-		this.close.bindAsEventListener(this));
+	this.save	= this.save.bind(this);
+	this.close	= this.close.bind(this);
+	this.change = this.change.bind(this);
+
+	this.controller.listen('save',		Mojo.Event.tap,				this.save);
+	this.controller.listen('close',		Mojo.Event.tap,				this.close);
+	this.controller.listen('weight',	Mojo.Event.propertyChange,	this.change);
 },
 
 change: function()
@@ -98,10 +99,9 @@ change: function()
 
 cleanup: function()
 {
-	this.controller.stopListening(this.controller.get('save'), Mojo.Event.tap,
-		this.save.bindAsEventListener(this));
-	this.controller.stopListening(this.controller.get('close'), Mojo.Event.tap,
-		this.close.bindAsEventListener(this));
+	this.controller.stopListening('save',	Mojo.Event.tap,				this.save);
+	this.controller.stopListening('close',	Mojo.Event.tap,				this.close);
+	this.controller.stopListening('weight',	Mojo.Event.propertyChange,	this.change);
 },
 
 save: function()

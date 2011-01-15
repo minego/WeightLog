@@ -35,7 +35,7 @@ setup: function(widget)
 	this.controller.setupWidget('user', {
 		modelProperty:		'user',
 		autoFocus:			true,
-		changeOnKeyPress:	false,
+		changeOnKeyPress:	true,
 		textCase:			Mojo.Widget.steModeLowerCase
 	}, this);
 
@@ -43,18 +43,17 @@ setup: function(widget)
 	this.controller.setupWidget('pass', {
 		modelProperty:		'pass',
 		autoFocus:			false,
-		changeOnKeyPress:	false
+		changeOnKeyPress:	true
 	}, this);
 
-	// TODO Disable the login button if there isn't a value for user and pass..
-
 	this.controller.setupWidget('login', {
-		type:			Mojo.Widget.activityButton,
-		buttonClass:	'primary',
-		textCase:		Mojo.Widget.steModeLowerCase,
-		autoReplace:	false
-	}, {
-		buttonLabel:	$L('Login')
+		type:				Mojo.Widget.activityButton,
+		buttonClass:		'primary',
+		textCase:			Mojo.Widget.steModeLowerCase,
+		autoReplace:		false
+	}, this.loginmodel = {
+		buttonLabel:		$L('Login'),
+		disabled:			true
 	}, this);
 
 	this.controller.setupWidget('close', {
@@ -72,25 +71,35 @@ setup: function(widget)
 		buttonLabel:	$L('Create skinnyr Account')
 	}, this);
 
+	this.change		= this.change.bind(this);
+	this.login		= this.login.bind(this);
+	this.close		= this.close.bind(this);
+	this.skinnyr	= this.skinnyr.bind(this);
 
-
-	this.controller.listen(this.controller.get('login'), Mojo.Event.tap,
-		this.login.bindAsEventListener(this));
-	this.controller.listen(this.controller.get('close'), Mojo.Event.tap,
-		this.close.bindAsEventListener(this));
-
-	this.controller.listen(this.controller.get('skinnyr'), Mojo.Event.tap,
-		this.skinnyr.bindAsEventListener(this));
+	this.controller.listen('user',		Mojo.Event.propertyChange,	this.change);
+	this.controller.listen('pass',		Mojo.Event.propertyChange,	this.change);
+	this.controller.listen('login',		Mojo.Event.tap,				this.login);
+	this.controller.listen('close',		Mojo.Event.tap,				this.close);
+	this.controller.listen('skinnyr',	Mojo.Event.tap,				this.skinnyr);
 },
 
 cleanup: function()
 {
-	this.controller.stopListening(this.controller.get('login'), Mojo.Event.tap,
-		this.login.bindAsEventListener(this));
-	this.controller.stopListening(this.controller.get('close'), Mojo.Event.tap,
-		this.close.bindAsEventListener(this));
-	this.controller.stopListening(this.controller.get('skinnyr'), Mojo.Event.tap,
-		this.skinnyr.bindAsEventListener(this));
+	this.controller.stopListening('user',		Mojo.Event.propertyChange,	this.change);
+	this.controller.stopListening('pass',		Mojo.Event.propertyChange,	this.change);
+	this.controller.stopListening('login',		Mojo.Event.tap,				this.login);
+	this.controller.stopListening('close',		Mojo.Event.tap,				this.close);
+	this.controller.stopListening('skinnyr',	Mojo.Event.tap,				this.skinnyr);
+},
+
+change: function()
+{
+	if (this.user && this.user.length && this.pass && this.pass.length) {
+		this.loginmodel.disabled = false;
+	} else {
+		this.loginmodel.disabled = false;
+	}
+	this.controller.modelChanged(this.loginmodel);
 },
 
 login: function()
