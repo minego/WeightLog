@@ -155,7 +155,7 @@ setup: function()
 	this.scrollOffset	= 0;
 
 	/* Now we need data */
-	if (!weights.loaded) {
+	if (!weights.loaded && !weights.loading) {
 		weights.load(this.p.skinnyr.authtoken, function() {
 			/* The selected item defaults to the last one */
 			this.selected = weights.count() - 1;
@@ -351,7 +351,6 @@ handleCommand: function(event)
 		case 'delrecord':
 			weights.del(this.selected);
 
-			// TODO	Somehow let the user know that we are busy syncing...
 			weights.sync(function() {
 				this.render();
 			}.bind(this));

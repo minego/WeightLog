@@ -147,13 +147,8 @@ del: function(token, id, success, failure)
 	xmlrpc('http://www.skinnyr.com/api2', 'deleteWeight', [
 		token, id
 	], function(worked) {
-		if (worked) {
-			succeeded = true;
-			success(id);
-		} else {
-			failed = true;
-			failure("Unkown error");
-		}
+		succeeded = true;
+		success(id);
 	}, function(err) {
 		failed = true;
 		failure(err);

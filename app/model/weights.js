@@ -66,6 +66,7 @@ load: function(authtoken, cb, keeplocal)
 
 		weights.loading	= false;
 		weights.loaded	= true;
+
 		cb();
 		return;
 	}
@@ -76,8 +77,47 @@ load: function(authtoken, cb, keeplocal)
 		been saved on the skinnr account yet.  Attempt to add each of these
 		to skinnyr before loading the records from skinnyr.
 	*/
-	weights.syncRecords(cb);
+
+	Mojo.Controller.appController.showBanner({
+		messageText:	$L("Syncing Accounts")
+	}, null, "skinnyr-sync");
+
+	weights.syncRecords(function()
+	{
+		Mojo.Controller.appController.removeBanner("skinnyr-sync");
+		cb();
+	}.bind(this));
 },
+
+/* Save the local records */
+save: function(cb)
+{
+	var dump = [];
+
+	for (var i = 0; i < weights.data.length; i++) {
+		var d = {};
+
+		if (weights.data[i].modified) {
+			d.modified		= true;
+		}
+
+		if (weights.data[i][skinnyr.id]) {
+			d[skinnyr.id]	= weights.data[i][skinnyr.id];
+		}
+
+		d[skinnyr.weight]	= weights.data[i][skinnyr.weight];
+		d[skinnyr.date]		= weights.data[i][skinnyr.date].getTime();
+
+		dump.push(d);
+		delete(d);
+	}
+
+	Preferences.set('weights',	dump);
+	Preferences.set('delqueue',	weights.delqueue || []);
+	delete(dump);
+},
+
+
 /* Save any modified values, both locally and on the skinnyr service */
 sync: function(cb)
 {
@@ -87,32 +127,10 @@ sync: function(cb)
 	*/
 	weights.load(weights.authtoken, function()
 	{
-		var dump = [];
-
-		for (var i = 0; i < weights.data.length; i++) {
-			var d = {};
-
-			if (weights.data[i].modified) {
-				d.modified		= true;
-			}
-
-			if (weights.data[i][skinnyr.id]) {
-				d[skinnyr.id]	= weights.data[i][skinnyr.id];
-			}
-
-			d[skinnyr.weight]	= weights.data[i][skinnyr.weight];
-			d[skinnyr.date]		= weights.data[i][skinnyr.date].getTime();
-
-			dump.push(d);
-			delete(d);
-		}
-
-		Preferences.set('weights',	dump);
-		Preferences.set('delqueue',	weights.delqueue || []);
-		delete(dump);
+		this.save();
 
 		cb(true);
-	}, true);
+	}.bind(this), true);
 },
 
 /*
@@ -268,6 +286,7 @@ syncRecords: function(cb, start, skipdel)
 
 	for (var i = start; i < weights.data.length; i++) {
 		if (!weights.data[i][skinnyr.id]) {
+Mojo.log('sync: Adding record: ' + weights.data[i][skinnyr.weight]);
 			skinnyr.add(weights.authtoken,
 				weights.data[i][skinnyr.weight], weights.data[i][skinnyr.date],
 				function(id) {
@@ -285,8 +304,9 @@ syncRecords: function(cb, start, skipdel)
 					weights.syncRecords(cb, weights.data.length);
 				}
 			);
-			break;
+			return;
 		} else if (weights.data[i].modified) {
+Mojo.log('sync: Updating record: ' + weights.data[i][skinnyr.weight]);
 			skinnyr.set(weights.authtoken, weights.data[i][skinnyr.id],
 				weights.data[i][skinnyr.weight], weights.data[i][skinnyr.date],
 				function(id) {
@@ -302,27 +322,41 @@ syncRecords: function(cb, start, skipdel)
 					weights.syncRecords(cb, weights.data.length);
 				}
 			);
-			break;
+			return;
 		}
 	}
 
 	if (!skipdel && weights.delqueue && weights.delqueue.length) {
-		var id = weights.delqueue.shift();
+Mojo.log('delqueue: ' + weights.delqueue.length);
+		var id = weights.delqueue.pop();
+
+Mojo.log('sync: Deleting record: ' + id + ', ' + weights.delqueue.length);
 		skinnyr.del(weights.authtoken, id,
-			function() {
-				weights.syncRecords(cb, weights.data.length);
+			function(worked) {
+				if (worked) {
+					weights.syncRecords(cb, weights.data.length);
+				}
 			},
 			function(err) {
-				/*
-					Give up on syncing and just go on with loading the
-					remote records.
-				*/
-				weights.delqueue.push(id);
-				weights.syncRecords(cb, weights.data.length, true);
+				if (4 == err['faultCode']) {
+					/* The record does not exist, treat as success */
+					weights.syncRecords(cb, weights.data.length);
+				} else {
+					/*
+						Give up on deleting this record for now, and try it
+						again later.  Go on loading the remote records.
+					*/
+Mojo.log('Putting the record back in the delqueue to try later: ' + Object.toJSON(err));
+					weights.delqueue.push(id);
+					weights.syncRecords(cb, weights.data.length, true);
+				}
 			}
 		);
+
+		return;
 	}
 
+Mojo.log('sync: Loading remote records');
 	if (i >= weights.data.length) {
 		/* Syncing is complete (or failed).  Load the remote records. */
 		skinnyr.list(weights.authtoken,
@@ -343,6 +377,8 @@ syncRecords: function(cb, start, skipdel)
 
 				weights.loading	= false;
 				weights.loaded	= true;
+
+				this.save();
 				cb(true);
 			},
 			function(err) {
