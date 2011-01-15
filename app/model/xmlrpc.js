@@ -25,7 +25,8 @@
  * Parameters are passed as JS Objects, and the callback function is
  * given a single JS Object representing the server's response.
  */
-var xmlrpc = function(server, method, params, callback, callErr, callFinal) {
+var xmlrpc = function(server, method, params, callback, callErr, callFinal)
+{
     if (callErr == null)
         callErr = alert;
 
@@ -46,6 +47,7 @@ var xmlrpc = function(server, method, params, callback, callErr, callFinal) {
             var ret = null;
             try {
 				Mojo.log('response XML: ' + request.responseText);
+				Mojo.log('');
 
                 if (request.responseXML)
                     ret = xmlrpc.parseResponse(request.responseXML);
@@ -58,7 +60,11 @@ var xmlrpc = function(server, method, params, callback, callErr, callFinal) {
             }
 
             try {
-                callback(ret);
+				if (ret[1]) {
+					callback(ret[0]);
+				} else {
+					callErr(ret[0]);
+				}
             } catch (err) {
                 err.message = "callback: " + err.message;
                 callErr(err.message);
@@ -70,11 +76,13 @@ var xmlrpc = function(server, method, params, callback, callErr, callFinal) {
     };
 
     var sending = xmlrpc.writeCall(method, params);
-	Mojo.log('request XML: ' + sending);
+	// Mojo.log('request XML: ' + sending);
+	// Mojo.log('');
     request.send(sending);
 };
 
-xmlrpc.writeCall = function(method, params) {
+xmlrpc.writeCall = function(method, params)
+{
     out = "<?xml version=\"1.0\"?>\n";
     out += "<methodCall>\n";
     out += "<methodName>"+ method + "</methodName>\n";
@@ -93,7 +101,8 @@ xmlrpc.writeCall = function(method, params) {
     return out;
 };
 
-xmlrpc.writeParam = function(param) {
+xmlrpc.writeParam = function(param)
+{
     if (param == null) {
         return "<nil />";
 	}
@@ -175,7 +184,8 @@ xmlrpc.writeParam = function(param) {
 	return "";
 };
 
-xmlrpc.findChild = function(parent, name) {
+xmlrpc.findChild = function(parent, name)
+{
 	for (var i = 0; i < parent.childNodes.length; i++) {
 		if (parent.childNodes[i].nodeName == "#text") {
 			continue;
@@ -189,43 +199,47 @@ xmlrpc.findChild = function(parent, name) {
 	return(null);
 };
 
-xmlrpc.parseResponse = function(dom) {
+xmlrpc.parseResponse = function(dom)
+{
 	var methResp = xmlrpc.findChild(dom, "methodResponse");
+	var params;
+	var param;
+	var value;
+	var success;
 
 	if (!methResp) {
         Mojo.log("malformed or missing <methodResponse>");
         throw "malformed or missing <methodResponse>";
 	}
 
-	var params = xmlrpc.findChild(methResp, "fault");
-	if (params) {
-		var fault = xmlrpc.findChild(params);
-        Mojo.log(fault["faultString"]);
-        throw fault["faultString"];
-    }
+	if ((params = xmlrpc.findChild(methResp, "fault"))) {
+		value = xmlrpc.findChild(params, "value");
+		success = false;
+    } else {
+		if (!(params = xmlrpc.findChild(methResp, "params"))) {
+			Mojo.log("malformed or missing <params>");
+			throw "malformed or missing <params>";
+		}
 
-	params = xmlrpc.findChild(methResp, "params");
-	if (!params) {
-        Mojo.log("malformed or missing <params>");
-        throw "malformed or missing <params>";
+		if (!(param = xmlrpc.findChild(params, "param"))) {
+			Mojo.log("malformed or missing <param>");
+			throw "malformed <param>";
+		}
+
+		value = xmlrpc.findChild(param, "value");
+		success = true;
 	}
 
-	var param = xmlrpc.findChild(params);
-	if (!param) {
-        Mojo.log("malformed or missing <param>");
-        throw "malformed <param>";
-	}
-
-	var value = xmlrpc.findChild(param);
 	if (!value) {
-        Mojo.log("malformed or missing <value>");
-        throw "malformed or missing <value>";
+		Mojo.log("malformed or missing <value>");
+		throw "malformed or missing <value>";
 	}
 
-    return xmlrpc.parse(value);
+    return([ xmlrpc.parse(value), success ]);
 };
 
-xmlrpc.parse = function(value) {
+xmlrpc.parse = function(value)
+{
     if (value.nodeName != "value") {
         Mojo.log("parser: expected <value>");
         throw "parser: expected <value>";
