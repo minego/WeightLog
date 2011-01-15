@@ -29,7 +29,7 @@ setup: function(widget)
 		type:			Mojo.Widget.button,
 		buttonClass:	'primary'
 	}, {
-		buttonLabel:	$L('Cancel'),
+		buttonLabel:	$L('Close'),
 		disabled:		MinegoApp.expired()
 	}, this);
 
@@ -47,14 +47,16 @@ setup: function(widget)
 
 	if (MinegoApp.expired()) {
 		var msg = [
-			'This version of Weight Log expired on', MinegoApp.expires(), '.'
+			'This version of Weight Log expired on',
+			MinegoApp.expires().toLocaleDateString() + '.'
 		].join(' ');
 
 		this.controller.get('message').innerHTML	= msg;
 	} else if (MinegoApp.beta) {
 		var msg = [
 			'This is a beta build of Weight Log.  It is fully functional, but',
-			'it will expire on', MinegoApp.expires().toLocaleDateString + '.',
+			'it will expire on', MinegoApp.expires().toLocaleDateString() + '.',
+			'<br/><br/>',
 
 			'Any weights and preferences saved will be reset when the released',
 			'version of the application is installed.',
@@ -69,8 +71,9 @@ setup: function(widget)
 		this.controller.get('message').innerHTML	= msg;
 	} else {
 		var msg = [
-			'This version of Weight Log will expire on', MinegoApp.expires(),
-			'.  Please enjoy the app until that time.<br /><br />'
+			'This version of Weight Log will expire on',
+			MinegoApp.expires().toLocaleDateString() + '.',
+			'Please enjoy the app until that time.<br /><br />'
 		].join(' ');
 
 		this.controller.get('message').innerHTML	= msg;
@@ -83,7 +86,7 @@ cleanup: function()
 },
 
 close: function() {
-	if (!MojoApp.expired()) {
+	if (!MinegoApp.expired()) {
 		this.widget.mojo.close();
 	}
 },
@@ -92,7 +95,7 @@ handleCommand: function(event)
 {
 	event.stop();
 
-	if (!MojoApp.expired()) {
+	if (!MinegoApp.expired()) {
 		this.widget.mojo.close();
 	}
 }
