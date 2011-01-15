@@ -4,10 +4,13 @@
 	{ "scenes": "prefs",		"source": "app/assistants/prefs-assistant.js"		},
 	{ "scenes": "newweight",	"source": "app/assistants/newweight-assistant.js"	},
 	{							"source": "app/assistants/login-assistant.js"		},
+	{							"source": "app/assistants/expires-assistant.js"		},
 	{							"source": "app/model/weights.js"					},
 	{							"source": "app/model/Preferences.js"				},
 	{							"source": "app/model/xmlrpc.js"						},
 	{							"source": "app/model/md5.js"						},
-	{							"source": "app/model/skinnyr.js"					}
+	{							"source": "app/model/skinnyr.js"					},
+
+	{							"source": "app/model/minego-app.js"					}
 ]
 
