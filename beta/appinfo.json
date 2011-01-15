@@ -1,10 +1,10 @@
 {
-	"id":		"net.minego.weightlog",
+	"id":		"net.minego.weightlog-beta",
 	"version":	"1.0.0",
 	"vendor":	"minego",
 	"type":		"web",
 	"main":		"index.html",
-	"title":	"Weight Log",
+	"title":	"Weight Log Beta",
 	"icon":		"icon.png",
 	"noWindow":	true
 }
