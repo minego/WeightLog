@@ -35,7 +35,6 @@ setup: function()
 	this.screenSizeChanged = this.screenSizeChanged.bind(this);
 	this.controller.listen(document, 'resize', this.screenSizeChanged);
 
-	// TODO Add shortcut keys...
 	/* Setup the app menu */
 	this.controller.setupWidget(Mojo.Menu.appMenu,
 		{ omitDefaultItems: true },
