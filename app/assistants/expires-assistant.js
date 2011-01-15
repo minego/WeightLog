@@ -14,6 +14,47 @@
 	ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+var AboutAssistant = Class.create({
+
+initialize: function(controller)
+{
+	this.controller = controller;
+},
+
+setup: function(widget)
+{
+	this.widget	= widget;
+
+	this.controller.setupWidget('close', {
+		type:			Mojo.Widget.button,
+		buttonClass:	'primary'
+	}, {
+		buttonLabel:	$L('Close')
+	}, this);
+
+	this.close = this.close.bind(this);
+	this.controller.listen('close', Mojo.Event.tap, this.close);
+},
+
+cleanup: function()
+{
+	this.controller.stopListening('close', Mojo.Event.tap, this.close);
+},
+
+close: function() {
+	this.widget.mojo.close();
+},
+
+handleCommand: function(event)
+{
+	event.stop();
+
+	this.widget.mojo.close();
+}
+
+});
+
+
 var ExpiresAssistant = Class.create({
 
 initialize: function(controller)
