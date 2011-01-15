@@ -198,6 +198,14 @@ ready: function()
 		today instead.
 	*/
 	this.scrollTo(weights.d(weights.count() - 1) || new Date());
+
+	if (MinegoApp.expired) {
+		this.controller.showDialog({
+			template:		'expires/expires-dialog',
+			assistant:		new ExpiresAssistant(this.controller),
+			preventCancel:	MinegoApp.expired()
+		});
+	}
 },
 
 activate: function()
@@ -597,11 +605,13 @@ render: function(full)
 
 
 	/* Draw the "Target" line */
-	this.drawHorizLine(this.getY(this.target), 'rgba(199, 121,  39, 1)');
-	this.showHint("TARGET (" + this.target + ")",
-		48, this.getY(this.target) - 2,
-		'rgba(255, 255, 255, 1)',
-		'rgba(199, 121,  39, 1)');
+	if (!isNaN(this.target) && this.target > 0) {
+		this.drawHorizLine(this.getY(this.target), 'rgba(199, 121,  39, 1)');
+		this.showHint("TARGET (" + this.target + ")",
+			48, this.getY(this.target) - 2,
+			'rgba(255, 255, 255, 1)',
+			'rgba(199, 121,  39, 1)');
+	}
 
 	/*
 		Draw the "Weight" line.  This is the main line based on all the values
