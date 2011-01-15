@@ -18,8 +18,6 @@
 
 // TODO Test the hell out of the skinnyr integration...
 
-// TODO Modify seems to be broken....
-
 var ChartAssistant = Class.create({
 
 setup: function()

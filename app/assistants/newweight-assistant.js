@@ -20,10 +20,6 @@ initialize: function(prefs, selected)
 {
 	this.p			= prefs;
 	this.selected	= selected;
-
-	if (0 == this.selected) {
-		this.selected = NaN;
-	}
 },
 
 setup: function()
