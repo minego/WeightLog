@@ -348,7 +348,7 @@ add: function()
 		assistant:		new LoginAssistant(this.p, this.controller, function() {
 							this.updateAccounts();
 						}.bind(this)),
-		template:		'login/login-scene',
+		template:		'dialogs/login-dialog',
 
 		preventCancel:	false,
 

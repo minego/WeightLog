@@ -201,7 +201,7 @@ ready: function()
 
 	if (MinegoApp.expired) {
 		this.controller.showDialog({
-			template:		'expires/expires-dialog',
+			template:		'dialogs/expires-dialog',
 			assistant:		new ExpiresAssistant(this.controller),
 			preventCancel:	MinegoApp.expired()
 		});
@@ -361,20 +361,10 @@ handleCommand: function(event)
 
 	switch (cmd) {
 		case 'about':
-			var msg = [
-				$L('Copyright 2010-2011, Micah N Gorrell.\n'),
-
-				'Scale Icon by Chris Wallace is licensed under a Creative',
-				'Commons Attribution 3.0 United States License.',
-				'Based on a work at www.chris-wallace.com.'
-			].join('  \n');
-
-			 this.controller.showAlertDialog({
-				title:		$L("Weight Log"),
-				message:	msg,
-
-				onChoose:	function(value) {},
-				choices:	[{ label: $L("OK"), value:"" }]
+			this.controller.showDialog({
+				template:		'dialogs/about-dialog',
+				assistant:		new AboutAssistant(this.controller),
+				preventCancel:	false
 			});
 
 			break;
