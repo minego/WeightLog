@@ -20,7 +20,10 @@ beta: true,
 
 expires: function()
 {
-	return((new Date()).setFullYear(2011, 2 + 1, 1));
+	var expires = new Date();
+
+	expires.setFullYear(2010, 2 + 1, 1);
+	return(expires);
 },
 
 expired: function()
