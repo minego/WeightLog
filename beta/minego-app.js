@@ -22,7 +22,7 @@ expires: function()
 {
 	var expires = new Date();
 
-	expires.setFullYear(2010, 2 + 1, 1);
+	expires.setFullYear(2011, 2 + 1, 1);
 	return(expires);
 },
 
