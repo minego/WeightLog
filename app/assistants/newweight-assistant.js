@@ -27,6 +27,8 @@ setup: function()
 	this.weight = "";
 	if (!isNaN(this.selected) && !isNaN(weights.w(this.selected))) {
 		this.weight += weights.w(this.selected);
+	} else if (!isNaN(weights.w(weights.count() - 1))) {
+		this.weight += weights.w(weights.count() - 1);
 	}
 
 	this.controller.setupWidget('weight', {
@@ -62,19 +64,19 @@ setup: function()
 
 
 	this.controller.setupWidget('save', {
-		type:			Mojo.Widget.activityButton,
-		buttonClass:	'primary'
+		type:			Mojo.Widget.activityButton
 	}, this.savemodel = {
 		buttonLabel:	$L('Save'),
-		disabled:		true
+		disabled:		true,
+		buttonClass:	'affirmative'
 	}, this);
 	this.change();
 
 	this.controller.setupWidget('close', {
-		type:			Mojo.Widget.button,
-		buttonClass:	'primary'
+		type:			Mojo.Widget.button
 	}, {
-		buttonLabel:	$L('Cancel')
+		buttonLabel:	$L('Cancel'),
+		buttonClass:	'negative'
 	}, this);
 
 	this.save	= this.save.bind(this);
@@ -84,6 +86,16 @@ setup: function()
 	this.controller.listen('save',		Mojo.Event.tap,				this.save);
 	this.controller.listen('close',		Mojo.Event.tap,				this.close);
 	this.controller.listen('weight',	Mojo.Event.propertyChange,	this.change);
+
+	this.minusone		= this.minusone.bind(this);
+	this.plusone		= this.plusone.bind(this);
+	this.minuspointone	= this.minuspointone.bind(this);
+	this.pluspointone	= this.pluspointone.bind(this);
+
+	this.controller.listen('minus1',		'click',				this.minusone);
+	this.controller.listen('plus1',			'click',				this.plusone);
+	this.controller.listen('minuspoint1',	'click',				this.minuspointone);
+	this.controller.listen('pluspoint1',	'click',				this.pluspointone);
 },
 
 change: function()
@@ -99,9 +111,15 @@ change: function()
 
 cleanup: function()
 {
-	this.controller.stopListening('save',	Mojo.Event.tap,				this.save);
-	this.controller.stopListening('close',	Mojo.Event.tap,				this.close);
-	this.controller.stopListening('weight',	Mojo.Event.propertyChange,	this.change);
+	this.controller.stopListening('save',		Mojo.Event.tap,		this.save);
+	this.controller.stopListening('close',		Mojo.Event.tap,		this.close);
+	this.controller.stopListening('weight',		Mojo.Event.propertyChange,
+																	this.change);
+
+	this.controller.stopListening('minus1',		'click',			this.minusone);
+	this.controller.stopListening('plus1',		'click',			this.plusone);
+	this.controller.stopListening('minuspoint1','click',			this.minuspointone);
+	this.controller.stopListening('pluspoint1',	'click',			this.pluspointone);
 },
 
 save: function()
@@ -140,7 +158,29 @@ NhandleCommand: function(event)
 	event.stop();
 
 	this.controller.stageController.popScene();
-}
+},
+
+add: function(value)
+{
+	var		w;
+
+	/*
+		You would think that adding or subtracting 0.1 would not be enough to
+		cause floating point errors.... but it is...  Multiply by 10 to make the
+		math work correctly.
+	*/
+	if (!isNaN(w = (10 * this.weight))) {
+		w += (value * 10);
+
+		this.weight = '' + (w / 10);
+		this.controller.modelChanged(this);
+	}
+},
+
+minusone:		function() {	this.add(-1.0);	},
+plusone:		function() {	this.add(+1.0);	},
+minuspointone:	function() {	this.add(-0.1);	},
+pluspointone:	function() {	this.add(+0.1);	}
 
 });
 
