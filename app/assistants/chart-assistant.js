@@ -515,12 +515,14 @@ render: function(full)
 			i = 1;
 		} else if ((this.max - this.min <= 60)) {
 			i = 2;
-		} else if ((this.max - this.min <= 150)) {
-			i = 5;
 		} else {
-			var i = ((this.max - this.min) / (13 - 3));
-			i = Math.floor(i / 10) * 10;
-			if (i < 10) i = 10;
+			var minlabelheight	= 30;
+			var y				= this.getY(this.min) + minlabelheight;
+
+			i = this.min - this.getWeight(y);
+
+			i = Math.round(i / 5) * 5;
+			if (i < 5) i = 5;
 		}
 
 		var y = Math.floor(this.getWeight(0));
