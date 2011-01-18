@@ -508,24 +508,16 @@ render: function(full)
 		c.translate(0, h);
 		this.ctx.translate(0, h);
 
-		var i;
-		if ((this.max - this.min) <= 15) {
-			i = 0.5;
-		} else if ((this.max - this.min) <= 30) {
-			i = 1;
-		} else if ((this.max - this.min <= 60)) {
-			i = 2;
-		} else {
-			var minlabelheight	= 30;
-			var y				= this.getY(this.min) + minlabelheight;
+		var minlabelheight	= 30;
+		var y				= this.getY(this.min) + minlabelheight;
+		var i				= this.min - this.getWeight(y);
 
-			i = this.min - this.getWeight(y);
-
+		i = Math.round(i * 2) / 2;
+		if (i > 1) {
 			i = Math.round(i / 5) * 5;
-			if (i < 5) i = 5;
 		}
 
-		var y = Math.floor(this.getWeight(0));
+		y = Math.floor(this.getWeight(0));
 		y = y - (y % i) + i;
 
 		for (;; y += i) {
