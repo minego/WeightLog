@@ -1,37 +1,91 @@
 html, body {
-	width:				100%;
-	height:				100%;
-	padding:			0px;
-	margin:				0px;
+	width:					100%;
+	height:					100%;
+	padding:				0px;
+	margin:					0px;
 }
 
 #grid {
-	z-index:			1;
+	z-index:				1;
 }
 
 #chart {
-	z-index:			2;
+	z-index:				2;
 }
 
 #labels {
-	z-index:			3;
+	z-index:				3;
 }
 
 #scroller {
-	z-index:			5;
+	z-index:				5;
 }
 
 #scroller div {
-	width:				1000%;
-	height:				100%;
+	width:					1000%;
+	height:					100%;
 }
 
 .chart canvas, #scroller {
-	position:			absolute;
-	left:				0px;
-	top:				0px;
+	position:				absolute;
+	left:					0px;
+	top:					0px;
 
-	height:				100%;
-	width:				100%;
+	height:					100%;
+	width:					100%;
+}
+
+
+/* capsules */
+
+.capsule {
+	border-width:			19px;
+	-webkit-box-sizing:		border-box;
+	display:				inline-block;
+	position:				relative;
+	margin:					2px 3px -2px -1px;
+}
+
+.capsule-wrapper {
+	margin:					-15px -8px -17px -11px;
+}
+
+.capsule-wrapper div {
+	overflow:				hidden;
+	line-height:			48px;
+	padding-right:			5px;
+	padding-left:			5px;
+	min-width:				35px;
+	text-align:				center;
+}
+
+.capsule {
+	-webkit-border-image:	url(../images/background-pill.png)
+								19 19 19 19 repeat repeat;
+}
+
+.active-popup .focused .capsule {
+  -webkit-border-image:		url(../images/background-pill-focus.png)
+								19 19 19 19 repeat repeat;
+}
+
+.capsule.selected {
+  -webkit-border-image:		url(../images/background-pill-downstate.png)
+								19 19 19 19 repeat repeat;
+}
+
+.palm-dark .capsule {
+  -webkit-border-image:		url(../images/background-pill-dark.png)
+								19 19 19 19 repeat repeat;
+}
+
+.palm-dark .active-popup .focused .capsule {
+  -webkit-border-image:		url(../images/background-pill-focus-dark.png)
+								19 19 19 19 repeat repeat;
+}
+
+.palm-dark .capsule.selected {
+  -webkit-border-image:		url(../images/background-pill-downstate-dark.png)
+								19 19 19 19 repeat repeat;
 }
 

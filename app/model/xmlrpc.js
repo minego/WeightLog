@@ -46,8 +46,8 @@ var xmlrpc = function(server, method, params, callback, callErr, callFinal)
 
             var ret = null;
             try {
-				Mojo.log('response XML: ' + request.responseText);
-				Mojo.log('');
+				// Mojo.log('response XML: ' + request.responseText);
+				// Mojo.log('');
 
                 if (request.responseXML)
                     ret = xmlrpc.parseResponse(request.responseXML);
