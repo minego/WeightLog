@@ -122,6 +122,11 @@ cleanup: function()
 	this.controller.stopListening('pluspoint1',	'click',			this.pluspointone);
 },
 
+activate: function()
+{
+	this.controller.stageController.setWindowOrientation('up');
+},
+
 save: function()
 {
 	this.controller.get('save').mojo.activate();
