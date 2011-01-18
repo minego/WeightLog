@@ -172,7 +172,8 @@ setup: function()
 	}
 
 	/* Default to today (Set it to 0 first, because getX uses it) */
-	this.scrollOffset	= 0;
+	this.scrollX	= 0;
+	this.scrollY	= 0;
 
 	/* Now we need data */
 	if (!weights.loaded && !weights.loading) {
@@ -299,7 +300,8 @@ orientationChanged: function(orientation)
 		var oldwidth		= this.daywidth;
 		var daywidth		= (w / this.daycount);
 
-		this.scrollOffset	= ((this.scrollOffset / oldwidth) * daywidth);
+		this.scrollX		= ((this.scrollX / oldwidth) * daywidth);
+		this.scrollY		= 0;
 		this.render(true);
 	}
 },
@@ -606,8 +608,8 @@ render: function(full)
 	this.ctx.strokeStyle	= 'rgba( 79, 121, 159, 1)';
 	this.ctx.fillStyle		= 'rgba( 79, 121, 159, 1)';
 
-	var startdate	= this.getDate(this.scrollOffset);
-	var enddate		= this.getDate(this.scrollOffset + w);
+	var startdate	= this.getDate(this.scrollX);
+	var enddate		= this.getDate(this.scrollX + w);
 	var projection	= true;
 	var i;
 
@@ -674,7 +676,7 @@ render: function(full)
 		var i		= weights.count() - 1;
 		var x		= this.getX(weights.d(i));
 		var y		= this.getY(weights.w(i));
-		var left	= this.getDate(this.scrollOffset + w).getTime() -
+		var left	= this.getDate(this.scrollX + w).getTime() -
 						weights.d(i).getTime();
 
 		this.ctx.beginPath();
@@ -727,16 +729,15 @@ render: function(full)
 		Make sure that the dummy scrollable area is large enough to contain all
 		of our data, and a bit extra for the projection line.
 	*/
-	var width = this.scrollOffset;
+	var width = this.scrollX;
 
 	if (projection) {
 		width += (w * 2);
 	}
 	width += this.getX(weights.d(weights.count() - 1)) || 0;
 
-	this.controller.get('dummy').style.width = width + 'px';
-
-
+	this.controller.get('dummy').style.width	= width + 'px';
+	this.controller.get('dummy').style.height	= h	+ 'px';
 
 	/*
 		Draw the date labels
@@ -757,7 +758,7 @@ render: function(full)
 		pixels.  This isn't perfect, but seems to work well.
 	*/
 	var i = 1 + Math.floor(this.daycount / (w / 32));
-	var d = this.getDate(this.scrollOffset);
+	var d = this.getDate(this.scrollX);
 
 	d.setSeconds(0);
 	d.setMinutes(0);
@@ -814,7 +815,7 @@ dragging: function(event)
 	var x	= Event.pointerX(event.move);
 
 	if (x != this.mouseX) {
-		this.scrollOffset -= (x - this.mouseX);
+		this.scrollX -= (x - this.mouseX);
 		this.mouseX = x;
 
 		this.render();
@@ -862,7 +863,8 @@ tap: function(event)
 
 moved: function(event)
 {
-	this.scrollOffset = this.controller.get('scroller').scrollLeft;
+	this.scrollX = this.controller.get('scroller').scrollLeft;
+	this.scrollY = this.controller.get('scroller').scrollTop;
 	this.render();
 },
 
@@ -952,7 +954,7 @@ getX: function(date)
 	var days		= (end - start) / (86400000);
 
 	/* Pad the first point by 45 for the weight labels */
-	return((45 + (days * daywidth)) - this.scrollOffset);
+	return((45 + (days * daywidth)) - this.scrollX);
 },
 
 /*
