@@ -45,7 +45,6 @@ login: function(user, pass, success, failure)
 	xmlrpc('http://www.skinnyr.com/api2', 'getAuthToken', [
 		user, hex_md5(pass),
 		'Weight Log Test',
-// TODO Change this to the URI to the app in the palm catalog once it is there
 		'www.minego.net'
 	], function(ret) {
 		if (ret["strAuthToken"]) {
