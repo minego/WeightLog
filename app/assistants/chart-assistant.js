@@ -35,13 +35,16 @@ setup: function()
 	this.screenSizeChanged = this.screenSizeChanged.bind(this);
 	this.controller.listen(document, 'resize', this.screenSizeChanged);
 
+	this.keyup = this.keyup.bindAsEventListener(this);
+	this.controller.listen(document, 'keyup', this.keyup, true);
+
 	/* Setup the app menu */
 	this.controller.setupWidget(Mojo.Menu.appMenu,
 		{ omitDefaultItems: true },
 		{
 			visible:		true,
 			items:
-			[
+			this.menuItems = [
 				{
 					command:				'new-record',
 					label:					$L('Enter current weight'),
@@ -274,6 +277,7 @@ activate: function()
 cleanup: function()
 {
 	this.controller.stopListening(document,		'resize',		this.screenSizeChanged);
+	this.controller.stopListening(document,		'keyup',		this.keyup);
 	this.controller.stopListening('scroller',	'scroll',		this.moved);
 	this.controller.stopListening('scroller',	Mojo.Event.tap,	this.tap);
 },
@@ -303,6 +307,45 @@ orientationChanged: function(orientation)
 		this.scrollX		= ((this.scrollX / oldwidth) * daywidth);
 		this.scrollY		= 0;
 		this.render(true);
+	}
+},
+
+findMenuItem: function(key, items)
+{
+	if (!items) {
+		items = this.menuItems;
+	}
+
+	key = key.toLowerCase();
+
+	for (var i = 0; i < items.length; i++) {
+		if (items[i].shortcut && items[i].shortcut == key) {
+			return(items[i].command);
+		}
+
+		if (items[i].items) {
+			var cmd;
+
+			if ((cmd = this.findMenuItem(key, items[i].items))) {
+				return(cmd);
+			}
+		}
+	}
+
+	return(null);
+},
+
+keyup: function(event)
+{
+	if (!this.controller) return;
+
+	var key	= String.fromCharCode(event.keyCode);
+	var cmd	= this.findMenuItem(key);
+
+	Mojo.log('key: ' + key + ', cmd: ' + cmd);
+
+	if (cmd) {
+		this.handleCommand(cmd);
 	}
 },
 
