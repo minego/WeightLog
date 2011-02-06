@@ -212,9 +212,15 @@ ready: function()
 	}
 },
 
+deactivate: function()
+{
+	this.controller.stopListening(document, 'keyup', this.keyup, true);
+},
+
 activate: function()
 {
 	var u;
+
 	switch (this.p.units) {
 		default:
 		case 'US':			u = skinnyr.lb;		break;
@@ -222,6 +228,7 @@ activate: function()
 		case 'imperial':	u = skinnyr.stone;	break;
 	}
 
+	this.controller.listen(document, 'keyup', this.keyup, true);
 	this.controller.stageController.setWindowOrientation('free');
 
 	if (this.p) {
