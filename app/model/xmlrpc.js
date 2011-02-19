@@ -68,6 +68,29 @@ var xmlrpc = function(server, method, params, callback, callErr, callFinal)
 					callErr(ret[0]);
 				}
             } catch (err) {
+Mojo.Controller.errorDialog($L('xmlrpc failure (please report to weightlog@minego.net): ') + err.message);
+				new Mojo.Service.Request("palm://com.palm.applicationManager", {
+					method:						'open',
+					parameters: {
+						id:						'com.palm.app.email',
+						params:	{
+							summary:			'Weight Log Syncronization Error',
+							text:				'Error:<br />' + err.message +
+
+												'<br /><br />Device Info:<br />' +
+												Object.toJSON(Mojo.Environment.DeviceInfo),
+							recipients: [{
+								type:			'email',
+								role:			1,
+								value:			'weightlog@minego.net',
+								contactDisplay:	'minego'
+							}]
+						}
+					}
+				});
+
+
+
                 err.message = "callback: " + err.message;
                 callErr(err.message);
             }
