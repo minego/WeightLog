@@ -90,19 +90,6 @@ setup: function()
 						}
 					]
 				}, {
-					label:					$L('Google Docs'),
-					items: [
-						{
-							command:		'google-import',
-							label:			$L('Import'),
-							checkEnabled:	true
-						}, {
-							command:		'google-export',
-							label:			$L('Export'),
-							checkEnabled:	true
-						}
-					]
-				}, {
 					command:				'prefs',
 					label:					$L('Preferences & Accounts')
 				}, {
@@ -222,56 +209,6 @@ ready: function()
 			assistant:		new ExpiresAssistant(this.controller),
 			preventCancel:	MinegoApp.expired()
 		});
-	}
-
-	// TODO REMOVE ME TESTING...
-	gdocs.init(this.p);
-
-	if (!this.p.google.wise || !this.p.google.writely) {
-		Mojo.log('Logging in');
-
-		gdocs.login('britrock@gmail.com', '5lZCpnIfcJTT',
-			function() {
-				gdocs.list(null,
-					function(entries) {
-						Mojo.log(Object.toJSON(entries));
-
-						gdocs.get(entries[0].url,
-							function()
-							{
-							},
-
-							function()
-							{
-							}
-						);
-					},
-					function(errortext) {
-						Mojo.log('failed: ' + errortext);
-					}
-				);
-			},
-			function(err) {
-				Mojo.log('Login failed: ' + err);
-			});
-	} else {
-		gdocs.list("weight",
-			function(entries) {
-				Mojo.log(Object.toJSON(entries));
-				gdocs.get(entries[0].url,
-					function()
-					{
-					},
-
-					function()
-					{
-					}
-				);
-			},
-			function(errortext) {
-				Mojo.log('failed: ' + errortext);
-			}
-		);
 	}
 },
 
@@ -464,14 +401,6 @@ handleCommand: function(event)
 						if (isNaN(weights.w(this.selected - 1))) {
 							event.preventDefault();
 						}
-						break;
-
-					case 'google-import':
-					case 'google-export':
-						if (!this.p.google.user || !this.p.google.user.length) {
-							event.preventDefault();
-						}
-
 						break;
 				}
 
