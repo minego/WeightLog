@@ -32,6 +32,7 @@ var xmlrpc = function(server, method, params, callback, callErr, callFinal)
 
     var request = window.XMLHttpRequest ? new XMLHttpRequest()
         : new ActiveXObject("MSXML2.XMLHTTP.3.0");
+
     request.open("POST", server, true);
     request.onreadystatechange = function() {
         if (request.readyState != 4) {
@@ -49,10 +50,11 @@ var xmlrpc = function(server, method, params, callback, callErr, callFinal)
 				// Mojo.log('response XML: ' + request.responseText);
 				// Mojo.log('');
 
-                if (request.responseXML)
+                if (request.responseXML) {
                     ret = xmlrpc.parseResponse(request.responseXML);
-                else
+                } else {
                     throw "bad xml: '" + request.responseText + "'";
+				}
             } catch (err) {
                 err.message = "xmlrpc: " + err.message;
 				Mojo.log(err.message);

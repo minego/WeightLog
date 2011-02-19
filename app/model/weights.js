@@ -28,6 +28,7 @@ units:		"US",
 load: function(authtoken, cb, keeplocal)
 {
 	if (weights.loading) {
+		Mojo.log('weights.load: Already loading');
 		cb(false);
 		return;
 	}
@@ -67,7 +68,7 @@ load: function(authtoken, cb, keeplocal)
 		weights.loading	= false;
 		weights.loaded	= true;
 
-		cb();
+		cb(true);
 		return;
 	}
 	weights.authtoken = authtoken;
@@ -82,10 +83,10 @@ load: function(authtoken, cb, keeplocal)
 		messageText:	$L("Syncing Accounts")
 	}, null, "skinnyr-sync");
 
-	weights.syncRecords(function()
+	weights.syncRecords(function(success)
 	{
 		Mojo.Controller.appController.removeBanner("skinnyr-sync");
-		cb();
+		cb(success);
 	}.bind(this));
 },
 
@@ -125,11 +126,11 @@ sync: function(cb)
 		Reloading the records will force syncing to skinnyr.  Make sure all data
 		is up to date before writing the local copy.
 	*/
-	weights.load(weights.authtoken, function()
+	weights.load(weights.authtoken, function(success)
 	{
 		this.save();
 
-		cb(true);
+		cb(success);
 	}.bind(this), true);
 },
 
@@ -378,10 +379,12 @@ Mojo.log('sync: Loading remote records');
 				weights.loading	= false;
 				weights.loaded	= true;
 
-				this.save();
+				weights.save();
 				cb(true);
 			},
 			function(err) {
+				Mojo.log('weights.syncRecords: ' + err);
+
 				weights.loading	= false;
 				weights.loaded	= true;
 				cb(false);
@@ -389,7 +392,6 @@ Mojo.log('sync: Loading remote records');
 		);
 	}
 }
-
 
 };
 
