@@ -10,7 +10,6 @@
 	{							"source": "app/model/xmlrpc.js"						},
 	{							"source": "app/model/md5.js"						},
 	{							"source": "app/model/skinnyr.js"					},
-	{							"source": "app/model/google-docs.js"				},
 
 	{							"source": "app/model/minego-app.js"					}
 ]
