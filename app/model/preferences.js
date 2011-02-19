@@ -58,7 +58,6 @@ Preferences.prototype.load = function()
 	this.scale		= prefs['scale']	|| this.scale;
 
 	this.skinnyr	= prefs['skinnyr']	|| this.skinnyr;
-	this.google		= prefs['google']	|| this.google;
 };
 
 Preferences.prototype.dump = function()
@@ -72,12 +71,6 @@ Preferences.prototype.dump = function()
 		'skinnyr': {
 			'authtoken':	this.skinnyr.authtoken,
 			'user':			this.skinnyr.user
-		},
-
-		'google': {
-			'user':			this.google.user,
-			'wise':			this.google.wise,
-			'writely':		this.google.writely
 		}
 	};
 
@@ -97,6 +90,5 @@ Preferences.prototype.reset = function()
 	this.scale		= 'week';
 
 	this.skinnyr	= { };
-	this.google		= { };
 };
 
