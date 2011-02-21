@@ -1,6 +1,6 @@
 {
 	"id":		"net.minego.weightlog-beta",
-	"version":	"1.0.2",
+	"version":	"1.0.3",
 	"vendor":	"minego",
 	"type":		"web",
 	"main":		"index.html",
