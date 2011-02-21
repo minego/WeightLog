@@ -25,13 +25,15 @@ units:		"US",
 	service (if an authtoken is provided).  The provided callback will be called
 	when loading is complete.
 */
-load: function(authtoken, cb, keeplocal)
+load: function(cb, keeplocal)
 {
 	if (weights.loading) {
 		Mojo.log('weights.load: Already loading');
 		cb(false);
 		return;
 	}
+
+	Mojo.log('weights.load: Loading...');
 	weights.loading		= true;
 
 	if (!keeplocal) {
@@ -47,7 +49,7 @@ load: function(authtoken, cb, keeplocal)
 		weights.data[i][skinnyr.date] = new Date(weights.data[i][skinnyr.date]);
 	}
 
-	if (!authtoken) {
+	if (!weights.authtoken) {
 		// TODO	What if the user switches skinnyr accounts?  All the old IDs
 		//		will be invalid.  Right now it will look to the app as if all
 		//		of the records had been deleted on the skinnyr service...
@@ -68,10 +70,10 @@ load: function(authtoken, cb, keeplocal)
 		weights.loading	= false;
 		weights.loaded	= true;
 
+		Mojo.log('weights.load: Complete (local only)');
 		cb(true);
 		return;
 	}
-	weights.authtoken = authtoken;
 
 	/*
 		If a record exists locally and doesn't have an ID then it has not
@@ -83,8 +85,11 @@ load: function(authtoken, cb, keeplocal)
 		messageText:	$L("Syncing Accounts")
 	}, null, "skinnyr-sync");
 
+	Mojo.log('weights.load: Calling weights.syncRecords');
 	weights.syncRecords(function(success)
 	{
+		Mojo.log('weights.load: Returned from weights.syncRecords.  Worked: ' +
+			(success ? 'true' : 'false'));
 		Mojo.Controller.appController.removeBanner("skinnyr-sync");
 		cb(success);
 	}.bind(this));
@@ -126,7 +131,7 @@ sync: function(cb)
 		Reloading the records will force syncing to skinnyr.  Make sure all data
 		is up to date before writing the local copy.
 	*/
-	weights.load(weights.authtoken, function(success)
+	weights.load(function(success)
 	{
 		this.save();
 

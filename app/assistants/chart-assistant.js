@@ -180,7 +180,9 @@ setup: function()
 
 	/* Now we need data */
 	if (!weights.loaded && !weights.loading) {
-		weights.load(this.p.skinnyr.authtoken, function() {
+		weights.authtoken = this.p.skinnyr.authtoken;
+
+		weights.load(function() {
 			/* The selected item defaults to the last one */
 			this.selected = weights.count() - 1;
 
