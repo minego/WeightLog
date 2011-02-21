@@ -266,7 +266,12 @@ sync: function()
 {
 	this.controller.get('sync').mojo.activate();
 
+	Mojo.log('Starting sync');
+
+	weights.authtoken = this.p.skinnyr.authtoken;
 	weights.sync(function(worked) {
+		Mojo.log('Sync complete.  Worked: ' + (worked ? 'true' : 'false'));
+
 		this.controller.get('sync').mojo.deactivate();
 
 		if (!worked) {
