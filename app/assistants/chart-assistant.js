@@ -167,12 +167,7 @@ setup: function()
 	this.selected		= 0;
 
 	/* The number of days to display.  Adjusting this will scale the chart. */
-	switch (this.p.scale) {
-		default:
-		case 'week':	this.daycount	= 9;	break;
-		case 'month':	this.daycount	= 35;	break;
-		case 'year':	this.daycount	= 356;	break;
-	}
+	this.setDayCount(true);
 
 	/* Default to today (Set it to 0 first, because getX uses it) */
 	this.scrollX	= 0;
@@ -187,6 +182,7 @@ setup: function()
 			this.selected = weights.count() - 1;
 
 			this.activate();
+			this.scrollTo(weights.d(weights.count() - 1) || new Date());
 		}.bind(this));
 	} else {
 		/* The selected item defaults to the last one */
@@ -199,11 +195,7 @@ setup: function()
 
 ready: function()
 {
-	/*
-		Scroll to the last record (if there is one).  If not then scroll to
-		today instead.
-	*/
-	this.scrollTo(weights.d(weights.count() - 1) || new Date());
+	this.scrollTo(new Date());
 
 	if (MinegoApp.expired) {
 		this.controller.showDialog({
@@ -464,21 +456,12 @@ handleCommand: function(event)
 			break;
 
 		case 'week':
-			this.setDayCount(9);
-			this.p.scale = 'week';
-			this.p.save();
-			break;
-
 		case 'month':
-			this.setDayCount(35);
-			this.p.scale = 'month';
-			this.p.save();
-			break;
-
 		case 'year':
-			this.setDayCount(356);
-			this.p.scale = 'year';
+			this.p.scale = cmd;
 			this.p.save();
+
+			this.setDayCount();
 			break;
 
 		default:
@@ -993,7 +976,7 @@ getWeight: function(y)
 },
 
 /* Return the X offset on the graph based on a specific date */
-getX: function(date)
+getX: function(date, absolute)
 {
 	if (!date) {
 		return(0);
@@ -1005,8 +988,12 @@ getX: function(date)
 	var daywidth	= (w / this.daycount);
 	var days		= (end - start) / (86400000);
 
-	/* Pad the first point by 45 for the weight labels */
-	return((45 + (days * daywidth)) - this.scrollX);
+	if (!absolute) {
+		/* Pad the first point by 45 for the weight labels */
+		return((45 + (days * daywidth)) - this.scrollX);
+	} else {
+		return((45 + (days * daywidth)));
+	}
 },
 
 /*
@@ -1093,22 +1080,32 @@ showHint: function(text, x, y, fgstyle, bgstyle)
 	This keeps the view centered on the same point, and will re-render if it is
 	needed.
 */
-setDayCount: function(daycount)
+setDayCount: function(quick)
 {
+	var daycount;
+
+	switch (this.p.scale) {
+		default:
+		case 'week':	daycount = 9;	break;
+		case 'month':	daycount = 35;	break;
+		case 'year':	daycount = 356;	break;
+	}
+
 	if (this.daycount == daycount) {
-		/* woo, all done */
-		return;
+		quick = true;
 	}
 
 	var w				= parseInt(this.controller.window.innerWidth);
-	var so				= this.scrollOffset + (w / 2);
+	var so				= (this.scrollOffset || 0) + (w / 2);
 	var days			= so / this.daywidth;
 
 	this.daycount		= daycount;
 	this.daywidth		= (w / this.daycount);
 	this.scrollOffset	= (days * this.daywidth) - (w / 2);
 
-	this.render();
+	if (!quick) {
+		this.render();
+	}
 },
 
 scrollTo: function(date)
@@ -1119,9 +1116,13 @@ scrollTo: function(date)
 		return(false);
 	}
 
+	if (isNaN(this.scrollOffset)) {
+		this.setDayCount();
+	}
+
 	/* The x offset for a mojo scroller needs to be negative...  */
 	this.controller.get('scroller').mojo.scrollTo(
-		-(this.getX(date) - (w * 0.7) + this.scrollOffset), 0, true, false);
+		-(this.getX(date, true) - (w * 0.7) + (this.scrollOffset || 0)), 0, true, false);
 
 	this.render();
 	return(true);
