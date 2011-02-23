@@ -36,7 +36,6 @@ setup: function()
 	this.controller.listen(document, 'resize', this.screenSizeChanged);
 
 	this.keyup = this.keyup.bindAsEventListener(this);
-	this.controller.listen(document, 'keyup', this.keyup, true);
 
 	/* Setup the app menu */
 	this.controller.setupWidget(Mojo.Menu.appMenu,
@@ -151,8 +150,9 @@ setup: function()
 
 	this.controller.setupWidget('scroller', { mode: 'horizontal' }, {});
 
-	this.moved = this.moved.bindAsEventListener(this);
-	this.controller.listen('scroller', 'scroll', this.moved, true);
+	this.moving		= this.moving.bindAsEventListener(this);
+	this.moved		= this.moved.bindAsEventListener(this);
+	this.controller.listen('scroller', Mojo.Event.scrollStarting, this.moving, true);
 
 	this.tap = this.tap.bindAsEventListener(this);
 	this.controller.listen('scroller', Mojo.Event.tap, this.tap, true);
@@ -174,16 +174,11 @@ setup: function()
 	this.scrollY	= 0;
 
 	/* Now we need data */
-	if (!weights.loaded && !weights.loading) {
+	this.loaded = this.loaded.bind(this);
+
+	if (!this.p.passcode && !weights.loaded && !weights.loading) {
 		weights.authtoken = this.p.skinnyr.authtoken;
-
-		weights.load(function() {
-			/* The selected item defaults to the last one */
-			this.selected = weights.count() - 1;
-
-			this.activate();
-			this.scrollTo(weights.d(weights.count() - 1) || new Date());
-		}.bind(this));
+		weights.load(this.loaded);
 	} else {
 		/* The selected item defaults to the last one */
 		this.selected = weights.count() - 1;
@@ -191,6 +186,15 @@ setup: function()
 
 	/* This will be filled out during render() */
 	this.ctx			= null;
+},
+
+loaded: function()
+{
+	/* The selected item defaults to the last one */
+	this.selected = weights.count() - 1;
+	this.activate();
+
+	this.scrollTo(weights.d(weights.count() - 1) || new Date());
 },
 
 ready: function()
@@ -204,11 +208,35 @@ ready: function()
 			preventCancel:	MinegoApp.expired()
 		});
 	}
+
+	this.keyupbk = this.keyup;
+	this.keyup = null;
+
+	if (this.p.passcode) {
+		this.controller.showDialog({
+			template:		'dialogs/passcode-dialog',
+			assistant:		new PasscodeAssistant(this.p, this.controller, function() {
+								if (this.keyupbk) {
+									this.keyup = this.keyupbk;
+									this.keyupbk = null;
+								}
+
+								weights.authtoken = this.p.skinnyr.authtoken;
+								weights.load(this.loaded);
+							}.bind(this)),
+			preventCancel:	true,
+
+			title:			$L('Enter Passcode'),
+			actionBtnTitle:	$L('Done')
+		});
+	}
 },
 
 deactivate: function()
 {
-	this.controller.stopListening(document, 'keyup', this.keyup, true);
+	if (this.keyup) {
+		this.controller.stopListening(document, 'keyup', this.keyup, true);
+	}
 },
 
 activate: function()
@@ -222,7 +250,9 @@ activate: function()
 		case 'imperial':	u = skinnyr.stone;	break;
 	}
 
-	this.controller.listen(document, 'keyup', this.keyup, true);
+	if (this.keyup) {
+		this.controller.listen(document, 'keyup', this.keyup, true);
+	}
 	this.controller.stageController.setWindowOrientation('free');
 
 	if (this.p) {
@@ -277,10 +307,14 @@ activate: function()
 
 cleanup: function()
 {
-	this.controller.stopListening(document,		'resize',		this.screenSizeChanged);
-	this.controller.stopListening(document,		'keyup',		this.keyup);
-	this.controller.stopListening('scroller',	'scroll',		this.moved);
+	this.controller.stopListening('scroller',	Mojo.Event.scrollStarting,
+																this.moving);
 	this.controller.stopListening('scroller',	Mojo.Event.tap,	this.tap);
+	this.controller.stopListening(document,		'resize',		this.screenSizeChanged);
+
+	if (this.keyup) {
+		this.controller.stopListening(document,	'keyup',		this.keyup);
+	}
 },
 
 screenSizeChanged: function()
@@ -338,7 +372,9 @@ findMenuItem: function(key, items)
 
 keyup: function(event)
 {
-	if (!this.controller) return;
+	if (!this.controller) {
+		return;
+	}
 
 	var key	= String.fromCharCode(event.keyCode);
 	var cmd	= this.findMenuItem(key);
@@ -896,11 +932,35 @@ tap: function(event)
 	this.render();
 },
 
-moved: function(event)
+moving: function(event)
+{
+	event.scroller.addListener(this);
+},
+
+moved: function(ending)
 {
 	this.scrollX = this.controller.get('scroller').scrollLeft;
 	this.scrollY = this.controller.get('scroller').scrollTop;
-	this.render();
+
+	/*
+		At times ScrollTo() ends early... grumble
+
+		If this is the last event, and we aren't where we are supposed to be
+		then scroll to the correct spot.  (Maybe this is an issue with the
+		emulator?  I dunno... it is annoying though)
+	*/
+	if (ending && !isNaN(this.desiredX)) {
+		var desired = this.desiredX;
+
+		this.desiredX = NaN;
+		if (desired != scrollX) {
+			setTimeout(function() {
+				this.controller.get('scroller').mojo.scrollTo(-desired, 0, true, false);
+			}.bind(this), 1);
+		}
+	} else {
+		this.render();
+	}
 },
 
 /*
@@ -1083,6 +1143,13 @@ showHint: function(text, x, y, fgstyle, bgstyle)
 setDayCount: function(quick)
 {
 	var daycount;
+	var changed = false;
+
+	if (!this.oldscale || this.oldscale != this.p.scale) {
+		changed = true;
+	}
+
+	this.oldscale = this.p.scale;
 
 	switch (this.p.scale) {
 		default:
@@ -1096,14 +1163,16 @@ setDayCount: function(quick)
 	}
 
 	var w				= parseInt(this.controller.window.innerWidth);
-	var so				= (this.scrollOffset || 0) + (w / 2);
-	var days			= so / this.daywidth;
+	var days			= (w / 2) / this.daywidth;
 
 	this.daycount		= daycount;
 	this.daywidth		= (w / this.daycount);
-	this.scrollOffset	= (days * this.daywidth) - (w / 2);
 
 	if (!quick) {
+		if (changed) {
+			this.scrollTo(weights.d(this.selected));
+		}
+
 		this.render();
 	}
 },
@@ -1116,15 +1185,15 @@ scrollTo: function(date)
 		return(false);
 	}
 
-	if (isNaN(this.scrollOffset)) {
-		this.setDayCount();
+	if (isNaN(this.dayCount)) {
+		this.setDayCount(true);
 	}
 
-	/* The x offset for a mojo scroller needs to be negative...  */
-	this.controller.get('scroller').mojo.scrollTo(
-		-(this.getX(date, true) - (w * 0.7) + (this.scrollOffset || 0)), 0, true, false);
+	this.desiredX = this.getX(date, true) - (w * 0.7);
 
-	this.render();
+	/* The x offset for a mojo scroller needs to be negative...  */
+	this.controller.get('scroller').mojo.scrollTo(-this.desiredX, 0, true, false);
+
 	return(true);
 }
 

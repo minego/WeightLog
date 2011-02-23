@@ -4,6 +4,7 @@
 	{ "scenes": "prefs",		"source": "app/assistants/prefs-assistant.js"		},
 	{ "scenes": "newweight",	"source": "app/assistants/newweight-assistant.js"	},
 	{							"source": "app/assistants/login-assistant.js"		},
+	{							"source": "app/assistants/passcode-assistant.js"	},
 	{							"source": "app/assistants/expires-assistant.js"		},
 	{							"source": "app/model/weights.js"					},
 	{							"source": "app/model/preferences.js"				},

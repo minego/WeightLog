@@ -97,7 +97,7 @@ change: function()
 	if (this.user && this.user.length && this.pass && this.pass.length) {
 		this.loginmodel.disabled = false;
 	} else {
-		this.loginmodel.disabled = false;
+		this.loginmodel.disabled = true;
 	}
 	this.controller.modelChanged(this.loginmodel);
 },
