@@ -35,8 +35,6 @@ setup: function()
 	this.screenSizeChanged = this.screenSizeChanged.bind(this);
 	this.controller.listen(document, 'resize', this.screenSizeChanged);
 
-	this.keyup = this.keyup.bindAsEventListener(this);
-
 	/* Setup the app menu */
 	this.controller.setupWidget(Mojo.Menu.appMenu,
 		{ omitDefaultItems: true },
@@ -209,18 +207,10 @@ ready: function()
 		});
 	}
 
-	this.keyupbk = this.keyup;
-	this.keyup = null;
-
 	if (this.p.passcode) {
 		this.controller.showDialog({
 			template:		'dialogs/passcode-dialog',
 			assistant:		new PasscodeAssistant(this.p, this.controller, function() {
-								if (this.keyupbk) {
-									this.keyup = this.keyupbk;
-									this.keyupbk = null;
-								}
-
 								weights.authtoken = this.p.skinnyr.authtoken;
 								weights.load(this.loaded);
 							}.bind(this)),
@@ -234,9 +224,6 @@ ready: function()
 
 deactivate: function()
 {
-	if (this.keyup) {
-		this.controller.stopListening(document, 'keyup', this.keyup, true);
-	}
 },
 
 activate: function()
@@ -250,9 +237,6 @@ activate: function()
 		case 'imperial':	u = skinnyr.stone;	break;
 	}
 
-	if (this.keyup) {
-		this.controller.listen(document, 'keyup', this.keyup, true);
-	}
 	this.controller.stageController.setWindowOrientation('free');
 
 	if (this.p) {
@@ -311,10 +295,6 @@ cleanup: function()
 																this.moving);
 	this.controller.stopListening('scroller',	Mojo.Event.tap,	this.tap);
 	this.controller.stopListening(document,		'resize',		this.screenSizeChanged);
-
-	if (this.keyup) {
-		this.controller.stopListening(document,	'keyup',		this.keyup);
-	}
 },
 
 screenSizeChanged: function()
@@ -342,47 +322,6 @@ orientationChanged: function(orientation)
 		this.scrollX		= ((this.scrollX / oldwidth) * daywidth);
 		this.scrollY		= 0;
 		this.render(true);
-	}
-},
-
-findMenuItem: function(key, items)
-{
-	if (!items) {
-		items = this.menuItems;
-	}
-
-	key = key.toLowerCase();
-
-	for (var i = 0; i < items.length; i++) {
-		if (items[i].shortcut && items[i].shortcut == key) {
-			return(items[i].command);
-		}
-
-		if (items[i].items) {
-			var cmd;
-
-			if ((cmd = this.findMenuItem(key, items[i].items))) {
-				return(cmd);
-			}
-		}
-	}
-
-	return(null);
-},
-
-keyup: function(event)
-{
-	if (!this.controller) {
-		return;
-	}
-
-	var key	= String.fromCharCode(event.keyCode);
-	var cmd	= this.findMenuItem(key);
-
-	Mojo.log('key: ' + key + ', cmd: ' + cmd);
-
-	if (cmd) {
-		this.handleCommand(cmd);
 	}
 },
 
@@ -1179,7 +1118,8 @@ setDayCount: function(quick)
 
 scrollTo: function(date)
 {
-	var w	= parseInt(this.controller.window.innerWidth);
+	var w = parseInt(this.controller.window.innerWidth);
+	var scroller;
 
 	if (!date) {
 		return(false);
@@ -1192,7 +1132,9 @@ scrollTo: function(date)
 	this.desiredX = this.getX(date, true) - (w * 0.7);
 
 	/* The x offset for a mojo scroller needs to be negative...  */
-	this.controller.get('scroller').mojo.scrollTo(-this.desiredX, 0, true, false);
+	if ((scroller = this.controller.get('scroller')) && scroller.mojo) {
+		scroller.mojo.scrollTo(-this.desiredX, 0, true, false);
+	}
 
 	return(true);
 }

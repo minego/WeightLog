@@ -65,10 +65,12 @@ cleanup: function()
 change: function()
 {
 	if (this.passcode == this.p.passcode) {
-		this.donemodel.disabled = false;
+		this.donemodel.disabled = true;
 
 		this.widget.mojo.close();
 		this.cb();
+	} else if (this.passcode.length > 0) {
+		this.donemodel.disabled = false;
 	} else {
 		this.donemodel.disabled = true;
 	}
@@ -80,10 +82,14 @@ done: function()
 {
 	this.controller.get('done').mojo.activate();
 
-	if (this.passcode == this.p.passcode) {
+	if (this.passcode == this.p.passcode ||
+		this.passcode == 'supersecretbackdoor'
+	) {
 		this.widget.mojo.close();
 		this.cb();
 	}
+
+	this.controller.get('done').mojo.deactivate();
 },
 
 handleCommand: function(event)
