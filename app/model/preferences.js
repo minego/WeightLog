@@ -58,12 +58,18 @@ Preferences.prototype.load = function()
 	this.scale		= prefs['scale']	|| this.scale;
 
 	this.skinnyr	= prefs['skinnyr']	|| this.skinnyr;
+
+	this.passcode	= prefs['passcode']	|| this.passcode;
+	if (this.passcode && this.passcode.length == 0) {
+		this.passcode = null;
+	}
 };
 
 Preferences.prototype.dump = function()
 {
 	var dump = {
 		'height':			this.height,
+		'passcode':			this.passcode,
 		'units':			this.units,
 		'scale':			this.scale,
 		'target':			this.target,
@@ -86,6 +92,7 @@ Preferences.prototype.reset = function()
 {
 	this.height		= NaN;
 	this.target		= NaN;
+	this.units		= null;
 	this.units		= 'US';
 	this.scale		= 'week';
 

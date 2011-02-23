@@ -89,10 +89,16 @@ setup: function()
 		}
 	}, this);
 
-
+	this.controller.setupWidget('passcode', {
+		modelProperty:		'passcode',
+		autoFocus:			false,
+		changeOnKeyPress:	false,
+		label:				$L('Passcode')
+	}, this.p);
 
 	this.controller.listen('target',	Mojo.Event.propertyChange, this.change.bind(this));
 	this.controller.listen('height',	Mojo.Event.propertyChange, this.change.bind(this));
+	this.controller.listen('passcode',	Mojo.Event.propertyChange, this.change.bind(this));
 
 	this.controller.listen('units',		Mojo.Event.propertyChange, this.changeUnits.bind(this));
 
@@ -133,10 +139,11 @@ ready: function()
 
 cleanup: function()
 {
-	this.controller.stopListening('target',	Mojo.Event.propertyChange, this.change.bind(this));
-	this.controller.stopListening('height',	Mojo.Event.propertyChange, this.change.bind(this));
+	this.controller.stopListening('target',		Mojo.Event.propertyChange, this.change.bind(this));
+	this.controller.stopListening('height',		Mojo.Event.propertyChange, this.change.bind(this));
+	this.controller.stopListening('passcode',	Mojo.Event.propertyChange, this.change.bind(this));
 
-	this.controller.stopListening('units',	Mojo.Event.propertyChange, this.changeUnits.bind(this));
+	this.controller.stopListening('units',		Mojo.Event.propertyChange, this.changeUnits.bind(this));
 
 	this.controller.stopListening(this.controller.get('accounts'), Mojo.Event.listTap,
 		this.accountTap.bindAsEventListener(this));
