@@ -199,26 +199,32 @@ ready: function()
 {
 	this.scrollTo(new Date());
 
+	var enterpass = function() {
+		if (this.p.passcode) {
+			this.controller.showDialog({
+				template:		'dialogs/passcode-dialog',
+				assistant:		new PasscodeAssistant(this.p, this.controller, function() {
+									weights.authtoken = this.p.skinnyr.authtoken;
+									weights.load(this.loaded);
+								}.bind(this)),
+				preventCancel:	true,
+
+				title:			$L('Enter Passcode'),
+				actionBtnTitle:	$L('Done')
+			});
+		}
+	}.bind(this);
+
 	if (MinegoApp.expired) {
 		this.controller.showDialog({
 			template:		'dialogs/expires-dialog',
-			assistant:		new ExpiresAssistant(this.controller),
-			preventCancel:	MinegoApp.expired()
-		});
-	}
+			preventCancel:	MinegoApp.expired(),
 
-	if (this.p.passcode) {
-		this.controller.showDialog({
-			template:		'dialogs/passcode-dialog',
-			assistant:		new PasscodeAssistant(this.p, this.controller, function() {
-								weights.authtoken = this.p.skinnyr.authtoken;
-								weights.load(this.loaded);
-							}.bind(this)),
-			preventCancel:	true,
-
-			title:			$L('Enter Passcode'),
-			actionBtnTitle:	$L('Done')
+			assistant:		new ExpiresAssistant(this.controller,
+								this.p.passcode ? enterpass : null)
 		});
+	} else {
+		enterpass();
 	}
 },
 

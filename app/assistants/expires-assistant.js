@@ -49,7 +49,7 @@ handleCommand: function(event)
 {
 	event.stop();
 
-	this.widget.mojo.close();
+	this.close();
 }
 
 });
@@ -57,9 +57,10 @@ handleCommand: function(event)
 
 var ExpiresAssistant = Class.create({
 
-initialize: function(controller)
+initialize: function(controller, cb)
 {
-	this.controller = controller;
+	this.controller	= controller;
+	this.cb			= cb;
 },
 
 setup: function(widget)
@@ -128,17 +129,18 @@ cleanup: function()
 
 close: function() {
 	if (!MinegoApp.expired()) {
-		this.widget.mojo.close();
+		if (this.cb) {
+			this.cb();
+		} else {
+			this.widget.mojo.close();
+		}
 	}
 },
 
 handleCommand: function(event)
 {
 	event.stop();
-
-	if (!MinegoApp.expired()) {
-		this.widget.mojo.close();
-	}
+	this.close();
 }
 
 });
