@@ -112,6 +112,7 @@ login: function()
 			this.p.skinnyr.user			= this.user;
 			this.p.save();
 
+			weights.authtoken = this.p.skinnyr.authtoken;
 			weights.sync(function(worked) {
 				this.controller.get('login').mojo.deactivate();
 

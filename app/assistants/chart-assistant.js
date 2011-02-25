@@ -415,6 +415,7 @@ handleCommand: function(event)
 		case 'delete-record':
 			weights.del(this.selected);
 
+			weights.authtoken = this.p.skinnyr.authtoken;
 			weights.sync(function() {
 				this.render();
 			}.bind(this));
