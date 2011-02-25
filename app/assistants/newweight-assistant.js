@@ -137,6 +137,7 @@ save: function()
 		weights.set(this.selected,	this.weight * 1, this.date);
 	}
 
+	weights.authtoken = this.p.skinnyr.authtoken;
 	weights.sync(function(worked) {
 		Mojo.log('Sync worked');
 
