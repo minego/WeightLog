@@ -130,7 +130,22 @@ setup: function()
 	this.controller.listen(this.controller.get('add'), Mojo.Event.tap,
 		this.add.bindAsEventListener(this));
 
+
+	this.controller.setupWidget('close', {
+		type:			Mojo.Widget.button
+	}, {
+		buttonLabel:	$L('Done'),
+		buttonClass:	'negative'
+	}, this);
+
+	this.close = this.close.bind(this);
+	this.controller.listen('close', Mojo.Event.tap, this.close);
+
 	this.activate();
+},
+
+close: function() {
+	this.controller.stageController.popScene();
 },
 
 ready: function()
@@ -152,6 +167,8 @@ cleanup: function()
 		this.sync.bindAsEventListener(this));
 	this.controller.stopListening(this.controller.get('add'), Mojo.Event.tap,
 		this.add.bindAsEventListener(this));
+
+	this.controller.stopListening('close',		Mojo.Event.tap,		this.close);
 },
 
 activate: function()

@@ -10,11 +10,15 @@ release:
 	rm -rf .active 2>/dev/null || true
 	ln -s release .active
 
-all: lint
+appinfo:
+	svn info | grep "Last Changed Rev" | sed 's/.*: *//' | sed 's/\(.*\)\([0-9][0-9]\)/s\/autoversion\/2.\1.\2\//' > .version
+	cat .active/appinfo.json | sed -f .version > appinfo.json
+
+all: lint appinfo
 	rm -rf .tmp 2>/dev/null || true
 	mkdir .tmp
 	cp -r app images index.html resources stylesheets icon.png sources.json .tmp
-	cp -r .active/appinfo.json .active/framework_config.json .tmp || true
+	cp -r appinfo.json .active/framework_config.json .tmp || true
 	cp .active/minego-app.js .tmp/app/model/ ||true
 	palm-package .tmp
 	rm -rf .tmp
