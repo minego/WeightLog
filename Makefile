@@ -11,7 +11,7 @@ release:
 	ln -s release .active
 
 appinfo:
-	svn info | grep "Last Changed Rev" | sed 's/.*: *//' | sed 's/\(.*\)\([0-9][0-9]\)/s\/autoversion\/2.\1.\2\//' > .version
+	svn info | grep "Last Changed Rev" | sed 's/.*: *//' | sed 's/\(.*\)\([0-9][0-9]\)/s\/autoversion\/1.\1.\2\//' > .version
 	cat .active/appinfo.json | sed -f .version > appinfo.json
 
 all: lint appinfo
