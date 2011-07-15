@@ -20,7 +20,7 @@ all: lint appinfo
 	cp -r app images index.html resources stylesheets icon.png sources.json .tmp
 	cp -r appinfo.json .active/framework_config.json .tmp || true
 	cp .active/minego-app.js .tmp/app/model/ ||true
-	palm-package .tmp
+	palm-package --use-v1-format .tmp
 	rm -rf .tmp
 
 install: all
