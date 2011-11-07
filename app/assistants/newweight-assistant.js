@@ -54,11 +54,9 @@ setup: function()
 
 	this.date = weights.d(this.selected) || new Date();
 	this.controller.setupWidget('date', {
-		label:				$L('Date'),
 		modelProperty:		'date'
 	}, this);
 	this.controller.setupWidget('time', {
-		label:				$L('Time'),
 		modelProperty:		'date'
 	}, this);
 
