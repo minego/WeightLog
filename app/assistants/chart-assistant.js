@@ -520,15 +520,8 @@ render: function(full)
 		c.font		= 'bold 13px sans-serif';
 		c.textAlign	= 'center';
 
-		/*
-			Adjust the canvas so that the origin is in the bottom left which
-			matches our grid.  The y axis is negative.
-		*/
-		c.translate(0, h);
-		this.ctx.translate(0, h);
-
 		var minlabelheight	= 30;
-		var y				= this.getY(this.min) + minlabelheight;
+		var y				= this.getY(this.min, 0) + minlabelheight;
 		var i				= this.min - this.getWeight(y);
 
 		i = Math.round(i * 2) / 2;
@@ -587,14 +580,7 @@ render: function(full)
 	this.ctx = chart.getContext('2d');
 	this.ctx.clearRect(0, 0, w, h);
 
-
-	/*
-		Adjust the canvas so that the origin is in the bottom left which matches
-		our grid.  The y axis is negative.
-	*/
 	this.ctx.save();
-	this.ctx.translate(0, h);
-
 
 	/* Setup some styles before drawing the data points and line */
 	this.ctx.save();
@@ -766,7 +752,7 @@ render: function(full)
 	this.ctx.textAlign	= 'center';
 
 	this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-	this.ctx.fillRect(0, -(h - 24), w, -h);
+	this.ctx.fillRect(0, 0, w, 24);
 
 	/*
 		Draw data labels for all visible days
@@ -791,8 +777,7 @@ render: function(full)
 	for (;;) {
 		var x = this.getX(d);
 
-		this.ctx.fillText("" + (d.getMonth() + 1) + "/" + d.getDate(),
-			x, -(h - 17));
+		this.ctx.fillText("" + (d.getMonth() + 1) + "/" + d.getDate(), x, 17);
 
 		d.setDate(d.getDate() + i);
 		if (isNaN(x) || x > w) break;
@@ -958,14 +943,22 @@ getBMI: function(weight)
 	return(kg / (m * m));
 },
 
+/*
+	Return the Y offset on the graph based on a weight
 
-/* Return the Y offset on the graph based on a weight */
-getY: function(weight)
+	Take into account that the original is the top left corner, even though our
+	graph's origin is in the bottom left corner.
+*/
+getY: function(weight, origin)
 {
 	var h		= parseInt(this.controller.window.innerHeight);
 	var r		= (h - (this.topMargin + this.bottomMargin)) / (this.max - this.min);
 
-	return(-((weight - this.min) * r) - this.bottomMargin);
+	if (isNaN(origin)) {
+		origin = h;
+	}
+
+	return(origin - ((weight - this.min) * r) - this.bottomMargin);
 },
 
 
