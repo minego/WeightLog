@@ -16,7 +16,7 @@ You may do whatever you want with this source code with the following conditions
 	this source code or included images, graphics, or other media for commercial
 	purposes
 
- 2.	You may not use the "WieghtLog" name or marks, or Micah N Gorrell, or minego
+ 2.	You may not use the "WeightLog" name or marks, or Micah N Gorrell, or minego
 	in a manner that implies endorsement or "official" involvement.
 
  3.	You must retain this license notice.
